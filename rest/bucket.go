@@ -39,8 +39,8 @@ func NewBucket(client *Client, route string) *Bucket {
 	}
 }
 
-// Make a request in this bucket
-func (b *Bucket) Make(req *http.Request) (res *http.Response, err error) {
+// Do a request in this bucket
+func (b *Bucket) Do(req *http.Request) (res *http.Response, err error) {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
@@ -139,5 +139,5 @@ func (b *Bucket) handle429(res *http.Response) (err error) {
 
 func (b *Bucket) handle500(req *http.Request) (*http.Response, error) {
 	<-time.After(5 * time.Second)
-	return b.Make(req)
+	return b.Do(req)
 }

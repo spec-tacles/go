@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"path"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -15,8 +16,8 @@ const (
 )
 
 // MakeRoute makes a ratelimit route given a path
-func MakeRoute(path string) (route string) {
-	var params = strings.Split(path[1:], PathSep)
+func MakeRoute(p string) (route string) {
+	var params = strings.Split(p[1:], PathSep)
 
 	if len(params) == 0 {
 		return ""
@@ -28,7 +29,7 @@ func MakeRoute(path string) (route string) {
 			return params[0]
 		}
 
-		var route = join(params[0], params[1])
+		var route = path.Join(params[0], params[1])
 		return buildRoute(params, route, 2)
 	}
 
@@ -42,17 +43,8 @@ func buildRoute(params []string, route string, i int) string {
 		if unicode.IsDigit(r) {
 			route += IDNotation
 		} else {
-			route += join(params[i])
+			route += path.Join(params[i])
 		}
-	}
-
-	return route
-}
-
-func join(parts ...string) string {
-	var route string
-	for _, part := range parts {
-		route += PathSep + part
 	}
 
 	return route

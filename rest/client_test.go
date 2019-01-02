@@ -18,7 +18,7 @@ func init() {
 	}
 }
 
-func TestMake(t *testing.T) {
+func TestDo(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, "/users/@me", nil)
 	if err != nil {
 		t.Error(err)
@@ -26,7 +26,7 @@ func TestMake(t *testing.T) {
 	}
 
 	client := rest.NewClient(os.Getenv("DISCORD_TOKEN"))
-	res, err := client.Make(req)
+	res, err := client.Do(req)
 	if err != nil {
 		t.Error(err)
 		return
@@ -36,4 +36,8 @@ func TestMake(t *testing.T) {
 	if res.StatusCode >= 400 {
 		t.Fail()
 	}
+}
+
+func TestDoJSON(t *testing.T) {
+	//
 }

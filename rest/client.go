@@ -1,6 +1,8 @@
 package rest
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -35,8 +37,29 @@ func (c *Client) GloballyLimited() bool {
 	return time.Now().Before(c.GlobalReset)
 }
 
-// Make a ratelimited request to the Discord API
-func (c *Client) Make(req *http.Request) (*http.Response, error) {
+// DoJSON is a utility method for making JSON requests to the Discord API
+func (c *Client) DoJSON(method, url string, body io.Reader, respBody interface{}) error {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+
+	err = json.NewDecoder(res.Body).Decode(respBody)
+	if err != nil {
+		return err
+	}
+
+	res.Body.Close()
+	return nil
+}
+
+// Do makes a raw HTTP ratelimited request to the Discord API
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	route := MakeRoute(req.URL.Path)
 	req.URL.Path = "/api/v" + c.APIVersion + req.URL.Path
 
@@ -62,5 +85,5 @@ func (c *Client) Make(req *http.Request) (*http.Response, error) {
 		req.Header.Set("Authorization", "Bot "+c.Token)
 	}
 
-	return bucket.(*Bucket).Make(req)
+	return bucket.(*Bucket).Do(req)
 }

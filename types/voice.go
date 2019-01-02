@@ -2,6 +2,45 @@ package types
 
 import "github.com/bwmarrin/snowflake"
 
+// Voice op codes
+const (
+	VoiceOpIdentify = iota
+	VoiceOpSelectProtocol
+	VoiceOpReady
+	VoiceOpHeartbeat
+	VoiceOpSessionDescription
+	VoiceOpSpeaking
+	VoiceOpHeartbeatAck
+	VoiceOpResume
+	VoiceOpHello
+	VoiceOpResumed
+	_
+	_
+	_
+	VoiceOpClientDisconnect
+)
+
+// Voice close codes
+const (
+	_ = 4000 + iota
+	VoiceCloseUnknownOpCode
+	_
+	VoiceCloseNotAuthenticate
+	VoiceCloseAuthenticationFailed
+	VoiceCloseAlreadyAuthenticated
+	VoiceCloseSessionNoLongerValid
+	_
+	_
+	VoiceCloseSessionTimeout
+	_
+	VoiceCloseServerNotFound
+	VoiceCloseUnknownProtocol
+	_
+	VoiceCloseDisconnected
+	VoiceCloseVoiceServerCrashed
+	VoiceCloseUnknownEncryptionMode
+)
+
 // VoiceState represents a voice state on Discord
 type VoiceState struct {
 	GuildID   snowflake.ID `json:"guild_id,omitempty"`

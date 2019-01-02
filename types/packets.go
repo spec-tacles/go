@@ -1,27 +1,71 @@
 package types
 
-import "github.com/bwmarrin/snowflake"
+import (
+	"encoding/json"
 
-// Payload represents a JSON payload sent over the Discord gateway
-type Payload struct {
+	"github.com/bwmarrin/snowflake"
+)
+
+// Op codes sent by Discord
+const (
+	OpDispatch = iota
+	OpHeartbeat
+	OpIdentify
+	OpStatusUpdate
+	OpVoiceStateUpdate
+	OpResume
+	OpReconnect
+	OpRequestGuildMembers
+	OpInvalidSession
+	OpHello
+	OpHeartbeatAck
+)
+
+// Gateway close event codes
+const (
+	CloseUnknownError = 4000 + iota
+	CloseUnknownOpCode
+	CloseDecodeError
+	CloseNotAuthenticated
+	CloseAuthenticationFailed
+	CloseAlreadyAuthenticated
+	_
+	CloseInvalidSeq
+	CloseRateLimited
+	CloseSessionTimeout
+	CloseInvalidShard
+	CloseShardingRequired
+)
+
+// SendPacket represents a JSON packet sent over the Discord gateway
+type SendPacket struct {
 	OP int         `json:"op"`
 	D  interface{} `json:"d"`
-	S  int         `json:"s"`
-	T  string      `json:"t"`
+}
+
+// ReceivePacket represents a JSON packet received over the Discord gateway
+type ReceivePacket struct {
+	OP int             `json:"op"`
+	D  json.RawMessage `json:"d"`
+	S  int             `json:"s,omitempty"`
+	T  int             `json:"t,omitempty"`
 }
 
 // Identify represents an identify packet
 type Identify struct {
-	Token      string `json:"token"`
-	Properties struct {
-		OS      string `json:"$os"`
-		Browser string `json:"$browser"`
-		Device  string `json:"$device"`
-	} `json:"properties"`
-	Compress       bool        `json:"compress,omitempty"`
-	LargeThreshold int         `json:"large_threshold,omitempty"`
-	Shard          []int       `json:"shard,omitempty"`
-	Presence       interface{} `json:"presence,omitempty"`
+	Token          string             `json:"token"`
+	Properties     IdentifyProperties `json:"properties"`
+	Compress       bool               `json:"compress,omitempty"`
+	LargeThreshold int                `json:"large_threshold,omitempty"`
+	Shard          []int              `json:"shard,omitempty"`
+	Presence       interface{}        `json:"presence,omitempty"`
+}
+
+// IdentifyProperties represents properties sent in an identify packet
+type IdentifyProperties struct {
+	OS      string `json:"$os"`
+	Browser string `json:"$browser"`
+	Device  string `json:"$device"`
 }
 
 // Resume represents a resume packet
@@ -68,7 +112,7 @@ type UpdateStatus struct {
 
 // Hello represents a hello packet
 type Hello struct {
-	HeartbeatInterval int      `json:"heartbeat_interval"`
+	HeartbeatInterval int64    `json:"heartbeat_interval"`
 	Trace             []string `json:"_trace"`
 }
 
