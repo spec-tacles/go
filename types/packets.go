@@ -129,6 +129,3 @@ type Ready struct {
 type Resumed struct {
 	Trace []string `json:"_trace"`
 }
-
-// InvalidSession represents an invalid session packet
-type InvalidSession bool
