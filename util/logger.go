@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"io"
 	"log"
 )
@@ -20,26 +19,31 @@ type Logger struct {
 	l     *log.Logger
 }
 
-func NewLogger(w io.Writer, module, prefix string) *Logger {
+// NewLogger creates a new logger with the given module & prefix
+func NewLogger(w io.Writer, prefix string) *Logger {
 	return &Logger{
-		l: log.New(w, fmt.Sprintf("[%s] %s", module, prefix), log.LstdFlags|log.Lshortfile),
+		l: log.New(w, prefix, log.LstdFlags|log.Lshortfile),
 	}
 }
 
+// Debug logs debug output with the debug prefix
 func (l *Logger) Debug(m ...interface{}) {
-	l.log(LogDebug, "[DEBUG]")
+	l.log(LogDebug, "[DEBUG]", m...)
 }
 
+// Info logs info output with the info prefix
 func (l *Logger) Info(m ...interface{}) {
-	l.log(LogInfo, "[INFO]")
+	l.log(LogInfo, "[INFO]", m...)
 }
 
+// Warn logs warn output with the warn prefix
 func (l *Logger) Warn(m ...interface{}) {
-	l.log(LogWarn, "[WARN]")
+	l.log(LogWarn, "[WARN]", m...)
 }
 
+// Error logs the error output with the error prefix
 func (l *Logger) Error(m ...interface{}) {
-	l.log(LogError, "[ERROR]")
+	l.log(LogError, "[ERROR]", m...)
 }
 
 func (l *Logger) log(level int, prefix string, m ...interface{}) {

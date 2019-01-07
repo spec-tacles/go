@@ -39,16 +39,22 @@ const (
 
 // SendPacket represents a JSON packet sent over the Discord gateway
 type SendPacket struct {
-	OP int         `json:"op"`
-	D  interface{} `json:"d"`
+	OP   int         `json:"op"`
+	Data interface{} `json:"d"`
 }
 
 // ReceivePacket represents a JSON packet received over the Discord gateway
 type ReceivePacket struct {
-	OP int             `json:"op"`
-	D  json.RawMessage `json:"d"`
-	S  int             `json:"s,omitempty"`
-	T  int             `json:"t,omitempty"`
+	OP   int             `json:"op"`
+	Data json.RawMessage `json:"d"`
+	Seq  int             `json:"s,omitempty"`
+	Type string          `json:"t,omitempty"`
+}
+
+// GatewayPacket represent a JSON packet we send to the end user
+type GatewayPacket struct {
+	OP   int             `json:"op"`
+	Data json.RawMessage `json:"d"`
 }
 
 // Identify represents an identify packet
