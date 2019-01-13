@@ -22,7 +22,7 @@ type Logger struct {
 // NewLogger creates a new logger with the given module & prefix
 func NewLogger(w io.Writer, prefix string) *Logger {
 	return &Logger{
-		l: log.New(w, prefix, log.LstdFlags|log.Lshortfile),
+		l: log.New(w, prefix, log.LstdFlags),
 	}
 }
 

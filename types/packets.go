@@ -13,12 +13,12 @@ const (
 	OpIdentify
 	OpStatusUpdate
 	OpVoiceStateUpdate
-	OpResume
-	OpReconnect
-	OpRequestGuildMembers
-	OpInvalidSession
-	OpHello
-	OpHeartbeatAck
+	OpResume              = 6
+	OpReconnect           = 7
+	OpRequestGuildMembers = 8
+	OpInvalidSession      = 9
+	OpHello               = 10
+	OpHeartbeatAck        = 11
 )
 
 // Gateway close event codes
@@ -128,7 +128,7 @@ type Ready struct {
 	User      interface{}   `json:"user"`   // TODO: type with user
 	Guilds    []interface{} `json:"guilds"` // TODO: type with guild
 	SessionID string        `json:"session_id"`
-	Track     []string      `json:"_trace"`
+	Trace     []string      `json:"_trace"`
 }
 
 // Resumed represents a resumed packet
