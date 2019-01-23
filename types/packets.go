@@ -13,12 +13,13 @@ const (
 	OpIdentify
 	OpStatusUpdate
 	OpVoiceStateUpdate
-	OpResume              = 6
-	OpReconnect           = 7
-	OpRequestGuildMembers = 8
-	OpInvalidSession      = 9
-	OpHello               = 10
-	OpHeartbeatAck        = 11
+	_
+	OpResume
+	OpReconnect
+	OpRequestGuildMembers
+	OpInvalidSession
+	OpHello
+	OpHeartbeatAck
 )
 
 // Gateway close event codes
