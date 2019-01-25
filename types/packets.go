@@ -52,12 +52,6 @@ type ReceivePacket struct {
 	Type string          `json:"t,omitempty"`
 }
 
-// GatewayPacket represent a JSON packet we send to the end user
-type GatewayPacket struct {
-	OP   int             `json:"op"`
-	Data json.RawMessage `json:"d"`
-}
-
 // Identify represents an identify packet
 type Identify struct {
 	Token          string             `json:"token"`

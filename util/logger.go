@@ -15,14 +15,19 @@ const (
 
 // Logger which allows you to subscribe to specified log events
 type Logger struct {
-	Level int
-	l     *log.Logger
+	l *log.Logger
+
+	Level       int
+	Destination io.Writer
 }
 
 // NewLogger creates a new logger with the given module & prefix
 func NewLogger(level int, w io.Writer, prefix string) *Logger {
 	return &Logger{
 		l: log.New(w, prefix, log.LstdFlags),
+
+		Level:       level,
+		Destination: w,
 	}
 }
 
