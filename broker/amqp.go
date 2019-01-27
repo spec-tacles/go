@@ -43,7 +43,7 @@ func (a *AMQP) Connect(url string) error {
 	err = ch.ExchangeDeclare(
 		a.Group,
 		"direct",
-		true,
+		false,
 		false,
 		false,
 		false,
