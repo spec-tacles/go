@@ -52,7 +52,7 @@ func (l *Logger) Error(m ...interface{}) {
 }
 
 func (l *Logger) log(level int, prefix string, m ...interface{}) {
-	if l.Level >= level {
+	if l.Level <= level {
 		m = append([]interface{}{prefix}, m...)
 		l.l.Println(m...)
 	}
