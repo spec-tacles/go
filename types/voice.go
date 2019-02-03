@@ -2,9 +2,12 @@ package types
 
 import "github.com/bwmarrin/snowflake"
 
+// VoiceOp represents a voice packet's operation code
+type VoiceOp uint8
+
 // Voice op codes
 const (
-	VoiceOpIdentify = iota
+	VoiceOpIdentify VoiceOp = iota
 	VoiceOpSelectProtocol
 	VoiceOpReady
 	VoiceOpHeartbeat

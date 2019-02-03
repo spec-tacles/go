@@ -13,4 +13,6 @@ type User struct {
 	Locale        string       `json:"locale,omitempty"`
 	Verified      bool         `json:"verified,omitempty"`
 	Email         string       `json:"email,omitempty"`
+	Flags         int          `json:"flags"`
+	PremiumType   int          `json:"premium_type"`
 }

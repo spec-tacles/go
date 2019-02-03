@@ -6,22 +6,6 @@ import (
 	"github.com/bwmarrin/snowflake"
 )
 
-// Op codes sent by Discord
-const (
-	OpDispatch = iota
-	OpHeartbeat
-	OpIdentify
-	OpStatusUpdate
-	OpVoiceStateUpdate
-	_
-	OpResume
-	OpReconnect
-	OpRequestGuildMembers
-	OpInvalidSession
-	OpHello
-	OpHeartbeatAck
-)
-
 // Gateway close event codes
 const (
 	CloseUnknownError = 4000 + iota
@@ -40,26 +24,29 @@ const (
 
 // SendPacket represents a JSON packet sent over the Discord gateway
 type SendPacket struct {
-	OP   int         `json:"op"`
+	Op   GatewayOp   `json:"op"`
 	Data interface{} `json:"d"`
 }
 
+// Seq represents the seq of a gateway packet
+type Seq uint64
+
 // ReceivePacket represents a JSON packet received over the Discord gateway
 type ReceivePacket struct {
-	OP   int             `json:"op"`
-	Data json.RawMessage `json:"d"`
-	Seq  int             `json:"s,omitempty"`
-	Type string          `json:"t,omitempty"`
+	Op    GatewayOp       `json:"op"`
+	Data  json.RawMessage `json:"d"`
+	Seq   Seq             `json:"s,omitempty"`
+	Event GatewayEvent    `json:"t,omitempty"`
 }
 
 // Identify represents an identify packet
 type Identify struct {
-	Token          string             `json:"token"`
-	Properties     IdentifyProperties `json:"properties"`
-	Compress       bool               `json:"compress,omitempty"`
-	LargeThreshold int                `json:"large_threshold,omitempty"`
-	Shard          []int              `json:"shard,omitempty"`
-	Presence       interface{}        `json:"presence,omitempty"`
+	Token          string              `json:"token"`
+	Properties     *IdentifyProperties `json:"properties"`
+	Compress       bool                `json:"compress,omitempty"`
+	LargeThreshold int                 `json:"large_threshold,omitempty"`
+	Shard          []int               `json:"shard,omitempty"`
+	Presence       *Activity           `json:"presence,omitempty"`
 }
 
 // IdentifyProperties represents properties sent in an identify packet
@@ -73,7 +60,7 @@ type IdentifyProperties struct {
 type Resume struct {
 	Token     string `json:"token"`
 	SessionID string `json:"session_id"`
-	Seq       int    `json:"seq"`
+	Seq       Seq    `json:"seq"`
 }
 
 // Heartbeat presents a heartbeat packet
@@ -119,7 +106,7 @@ type Hello struct {
 
 // Ready represents a ready packet
 type Ready struct {
-	V         int           `json:"v"`
+	Version   int           `json:"v"`
 	User      interface{}   `json:"user"`   // TODO: type with user
 	Guilds    []interface{} `json:"guilds"` // TODO: type with guild
 	SessionID string        `json:"session_id"`
