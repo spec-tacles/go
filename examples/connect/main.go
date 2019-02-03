@@ -1,42 +1,16 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 
-	"github.com/spec-tacles/spectacles.go/types"
-
 	"github.com/spec-tacles/spectacles.go/gateway"
+	"github.com/spec-tacles/spectacles.go/rest"
+	"github.com/spec-tacles/spectacles.go/types"
 )
 
 var token = os.Getenv("TOKEN")
-
-type rest struct{}
-
-func (rest) DoJSON(method, path string, body io.Reader, value interface{}) (err error) {
-	req, err := http.NewRequest(method, "https://discordapp.com/api"+path, body)
-	if err != nil {
-		return
-	}
-
-	req.Header.Add("Authorization", "Bot "+token)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return errors.New(res.Status)
-	}
-
-	return json.NewDecoder(res.Body).Decode(value)
-}
 
 func main() {
 	c := gateway.NewShard(&gateway.ShardOptions{
@@ -50,7 +24,7 @@ func main() {
 	})
 
 	var err error
-	c.Gateway, err = gateway.FetchGatewayBot(rest{})
+	c.Gateway, err = gateway.FetchGatewayBot(rest.NewClient(token))
 	if err != nil {
 		log.Panicf("failed to load gateway: %v", err)
 	}
