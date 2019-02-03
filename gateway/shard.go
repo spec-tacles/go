@@ -200,7 +200,7 @@ func (s *Shard) readPacket() (p *types.ReceivePacket, err error) {
 	return
 }
 
-// expectePacket reads the next packet, verifies its operation code, and event name (if applicable)
+// expectPacket reads the next packet, verifies its operation code, and event name (if applicable)
 func (s *Shard) expectPacket(op types.GatewayOp, event types.GatewayEvent) (p *types.ReceivePacket, err error) {
 	p, err = s.readPacket()
 	if err != nil {
