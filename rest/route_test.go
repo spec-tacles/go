@@ -3,7 +3,7 @@ package rest_test
 import (
 	"testing"
 
-	"github.com/spec-tacles/spectacles/rest"
+	"github.com/spec-tacles/spectacles.go/rest"
 )
 
 var routes = map[string]string{
