@@ -110,17 +110,6 @@ func (s *Shard) Open() (err error) {
 		s.log(LogLevelDebug, "Sent resume upon connecting")
 	}
 
-	// go func() {
-	// 	time.Sleep(time.Second * 5)
-	// 	if err := s.Close(); err != nil {
-	// 		s.log(LogLevelError, "failed to close session: %v", err)
-	// 		return
-	// 	}
-	// 	if err := s.handleClose(4000, "something happened"); err != nil {
-	// 		s.log(LogLevelError, "failed to handle close: %v", err)
-	// 	}
-	// }()
-
 	stoppable = true
 
 	go func(stop chan struct{}) {
