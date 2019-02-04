@@ -19,9 +19,10 @@ import (
 type Shard struct {
 	Gateway *types.GatewayBot
 
-	opts   *ShardOptions
-	conn   *websocket.Conn
-	connMu sync.Mutex
+	opts    *ShardOptions
+	conn    *websocket.Conn
+	connMu  sync.Mutex
+	limiter *limiter
 
 	sessionID string
 	acked     bool
@@ -34,9 +35,10 @@ func NewShard(opts *ShardOptions) *Shard {
 	opts.init()
 
 	return &Shard{
-		opts:  opts,
-		acked: true,
-		seq:   new(uint64),
+		opts:    opts,
+		limiter: newLimiter(120, time.Minute),
+		acked:   true,
+		seq:     new(uint64),
 	}
 }
 
@@ -331,6 +333,8 @@ func (s *Shard) handleClose(code int, reason string) (err error) {
 func (s *Shard) sendPacket(op types.GatewayOp, data interface{}) error {
 	s.connMu.Lock()
 	defer s.connMu.Unlock()
+
+	s.limiter.Lock()
 
 	return s.conn.WriteJSON(&types.SendPacket{
 		Op:   op,

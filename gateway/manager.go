@@ -25,7 +25,7 @@ func NewManager(opts *ManagerOptions) *Manager {
 	}
 }
 
-const spawnDelay = time.Second * 5
+const startDelay = time.Second * 5
 
 // Start starts all shards
 func (m *Manager) Start() (err error) {
@@ -47,7 +47,7 @@ func (m *Manager) Start() (err error) {
 
 	for i := m.opts.ServerIndex; i < m.opts.ShardCount; i += m.opts.ServerCount {
 		if i != m.opts.ServerIndex {
-			time.Sleep(spawnDelay)
+			time.Sleep(startDelay)
 		}
 
 		opts := m.opts.ShardOptions.clone()
