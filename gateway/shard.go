@@ -190,15 +190,6 @@ func (s *Shard) readPacket() (p *types.ReceivePacket, err error) {
 
 	go s.opts.OnPacket(p)
 
-	// if LogLevelDebug <= s.opts.LogLevel {
-	// 	pb, err := json.MarshalIndent(p, "", "\t")
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	s.log(LogLevelDebug, "Received payload\n%s", pb)
-	// }
-
 	return
 }
 
