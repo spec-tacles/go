@@ -19,14 +19,15 @@ import (
 type Shard struct {
 	Gateway *types.GatewayBot
 
-	opts    *ShardOptions
-	conn    *websocket.Conn
-	connMu  sync.Mutex
-	limiter *limiter
+	opts      *ShardOptions
+	limiter   *limiter
+	reopening atomic.Value
+
+	connMu sync.Mutex
+	conn   *websocket.Conn
 
 	sessionID string
-	acked     bool
-	ackedMu   sync.RWMutex
+	acked     atomic.Value
 	seq       *uint64
 }
 
@@ -37,7 +38,6 @@ func NewShard(opts *ShardOptions) *Shard {
 	return &Shard{
 		opts:    opts,
 		limiter: newLimiter(120, time.Minute),
-		acked:   true,
 		seq:     new(uint64),
 	}
 }
@@ -173,6 +173,14 @@ func (s *Shard) Close() (err error) {
 
 // reopen closes and opens the connection
 func (s *Shard) reopen() (err error) {
+	reopening := s.reopening.Load()
+	if reopening == nil || reopening.(bool) {
+		return
+	}
+
+	s.reopening.Store(true)
+	defer s.reopening.Store(false)
+
 	if err = s.Close(); err != nil {
 		return
 	}
@@ -284,9 +292,7 @@ func (s *Shard) handlePacket(p *types.ReceivePacket) (err error) {
 		s.log(LogLevelDebug, "Sent identify in response to invalid non-resumable session")
 
 	case types.GatewayOpHeartbeatACK:
-		s.ackedMu.Lock()
-		s.acked = true
-		s.ackedMu.Unlock()
+		s.acked.Store(true)
 	}
 
 	return
@@ -340,7 +346,7 @@ func (s *Shard) sendPacket(op types.GatewayOp, data interface{}) error {
 	s.connMu.Lock()
 	defer s.connMu.Unlock()
 
-	s.limiter.Lock()
+	s.limiter.lock()
 
 	return s.conn.WriteJSON(&types.SendPacket{
 		Op:   op,
@@ -364,17 +370,12 @@ func (s *Shard) sendResume() error {
 
 // sendHeartbeat sends a heartbeat packet
 func (s *Shard) sendHeartbeat() error {
-	s.ackedMu.RLock()
-	acked := s.acked
-	s.ackedMu.RUnlock()
-
-	if !acked {
+	acked := s.acked.Load()
+	if acked != nil && !acked.(bool) {
 		return ErrHeartbeatUnacknowledged
 	}
 
-	s.ackedMu.Lock()
-	s.acked = false
-	s.ackedMu.Unlock()
+	s.acked.Store(true)
 
 	return s.sendPacket(types.GatewayOpHeartbeat, atomic.LoadUint64(s.seq))
 }

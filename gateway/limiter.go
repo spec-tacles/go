@@ -19,7 +19,7 @@ func newLimiter(limit int32, duration time.Duration) *limiter {
 	}
 }
 
-func (l *limiter) Lock() {
+func (l *limiter) lock() {
 	now := time.Now().UnixNano()
 
 	if l.resetsAt <= now {
@@ -29,7 +29,7 @@ func (l *limiter) Lock() {
 
 	if l.available <= 0 {
 		time.Sleep(time.Duration(l.resetsAt - now))
-		l.Lock()
+		l.lock()
 		return
 	}
 
