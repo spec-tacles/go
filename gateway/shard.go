@@ -85,7 +85,14 @@ func (s *Shard) Open() (err error) {
 
 	go func(stop <-chan struct{}) {
 		if err := s.startHeartbeater(time.Duration(h.HeartbeatInterval)*time.Millisecond, stop); err != nil {
-			s.log(LogLevelError, "Heartbeat error: %v", err)
+			if err == ErrHeartbeatUnacknowledged {
+				s.log(LogLevelInfo, "Heartbeat was not acknowledged in time, reconnecting")
+				if err := s.reopen(); err != nil {
+					s.log(LogLevelError, "Failed to reconnect: %v", err)
+				}
+			} else {
+				s.log(LogLevelError, "Heartbeat error: %v", err)
+			}
 		}
 	}(stop)
 
@@ -134,9 +141,17 @@ func (s *Shard) Open() (err error) {
 			}
 		}()
 
+		conn := s.conn
+
 		for p := range packetChan {
 			if err := s.handlePacket(p); err != nil {
 				s.log(LogLevelError, "Error while handling packet: %v", err)
+			}
+		}
+
+		if s.conn == conn {
+			if err := s.reopen(); err != nil {
+				s.log(LogLevelError, "Failed to reconnect: %v", err)
 			}
 		}
 	}(stop)
@@ -162,7 +177,26 @@ func (s *Shard) reopen() (err error) {
 		return
 	}
 
-	return s.Open()
+	timeout := s.opts.Retryer.FirstTimeout()
+	retries := 0
+
+	for {
+		if timeout, err = s.opts.Retryer.NextTimeout(timeout, retries); err != nil {
+			return
+		}
+
+		s.log(LogLevelInfo, "Reconnect attempt #%d", retries)
+
+		err = s.Open()
+		if err == nil {
+			return
+		}
+
+		s.log(LogLevelError, "Error while reconnecting: %v", err)
+
+		time.Sleep(timeout * time.Second)
+		retries++
+	}
 }
 
 // readPacket reads the next packet
@@ -221,7 +255,7 @@ func (s *Shard) handlePacket(p *types.ReceivePacket) (err error) {
 		return s.sendHeartbeat()
 
 	case types.GatewayOpReconnect:
-		s.log(LogLevelDebug, "Attempting to reopen session in response to reconnect")
+		s.log(LogLevelDebug, "Attempting to reconnect session in response to reconnect")
 
 		if err = s.reopen(); err != nil {
 			return
@@ -294,30 +328,11 @@ func (s *Shard) handleClose(code int, reason string) (err error) {
 	s.log(level, "Server closed connection with code %d and reason %s", code, reason)
 
 	switch code {
-	case 4004, 4010, 4011: // Fatal error codes
+	case types.CloseAuthenticationFailed, types.CloseInvalidShard, types.CloseShardingRequired: // Fatal error codes
 		return
 	}
 
-	timeout := s.opts.Retryer.FirstTimeout()
-	retries := 0
-
-	for {
-		if timeout, err = s.opts.Retryer.NextTimeout(timeout, retries); err != nil {
-			return
-		}
-
-		s.log(LogLevelInfo, "Reconnect attempt #%d", retries)
-
-		err = s.Open()
-		if err == nil {
-			return
-		}
-
-		s.log(LogLevelError, "Error while reconnecting: %v", err)
-
-		time.Sleep(timeout * time.Second)
-		retries++
-	}
+	return s.reopen()
 }
 
 // sendPacket sends a packet
