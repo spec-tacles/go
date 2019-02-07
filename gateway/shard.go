@@ -202,7 +202,7 @@ func (s *Shard) reopen() (err error) {
 
 		s.log(LogLevelError, "Error while reconnecting: %v", err)
 
-		time.Sleep(timeout * time.Second)
+		time.Sleep(timeout)
 		retries++
 	}
 }
@@ -214,7 +214,7 @@ func (s *Shard) readPacket() (p *types.ReceivePacket, err error) {
 		return
 	}
 
-	// TODO: Make this shit actually work
+	// TODO: Make zlib streams work (it's contextless atm)
 	if m == websocket.BinaryMessage {
 		z, err := zlib.NewReader(r)
 		if err != nil {
@@ -356,6 +356,7 @@ func (s *Shard) sendPacket(op types.GatewayOp, data interface{}) error {
 
 // sendIdentify sends an identify packet
 func (s *Shard) sendIdentify() error {
+	// TODO: rate limit identify packets
 	return s.sendPacket(types.GatewayOpIdentify, s.opts.Identify)
 }
 

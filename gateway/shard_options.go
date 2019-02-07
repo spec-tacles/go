@@ -74,7 +74,7 @@ func (defaultRetryer) NextTimeout(timeout time.Duration, retries int) (time.Dura
 	timeout *= 2
 
 	if timeout > maxRetry {
-		return maxRetry, nil
+		timeout = maxRetry
 	}
 
 	return timeout, nil

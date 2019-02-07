@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/spec-tacles/spectacles.go/types"
 )
@@ -25,8 +24,6 @@ func NewManager(opts *ManagerOptions) *Manager {
 	}
 }
 
-const startDelay = time.Second * 5
-
 // Start starts all shards
 func (m *Manager) Start() (err error) {
 	g, err := FetchGatewayBot(m.opts.REST)
@@ -43,11 +40,11 @@ func (m *Manager) Start() (err error) {
 		expected++
 	}
 
-	m.log(LogLevelInfo, "Spawning %d shard(s)", expected)
+	m.log(LogLevelInfo, "Starting %d shard(s)", expected)
 
 	for i := m.opts.ServerIndex; i < m.opts.ShardCount; i += m.opts.ServerCount {
-		if i != m.opts.ServerIndex {
-			time.Sleep(startDelay)
+		if err = m.opts.ShardLimiter.Wait(i); err != nil {
+			return
 		}
 
 		opts := m.opts.ShardOptions.clone()
@@ -78,7 +75,7 @@ func (m *Manager) Start() (err error) {
 
 		m.Shards[i] = s
 
-		m.log(LogLevelInfo, "Spawned shard %d", i)
+		m.log(LogLevelInfo, "Started shard %d", i)
 	}
 
 	return
