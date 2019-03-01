@@ -2,9 +2,12 @@ package types
 
 import "github.com/bwmarrin/snowflake"
 
-// channel types
+// ChannelType represents a channel's type
+type ChannelType int
+
+// Channel types
 const (
-	ChannelTypeGuildText = iota
+	ChannelTypeGuildText ChannelType = iota
 	ChannelTypeDM
 	ChannelTypeGuildVoice
 	ChannelTypeGroupDM
@@ -14,7 +17,7 @@ const (
 // Channel represents a Discord channel
 type Channel struct {
 	ID                   snowflake.ID  `json:"id"`
-	Type                 int           `json:"type"`
+	Type                 ChannelType   `json:"type"`
 	GuildID              snowflake.ID  `json:"guild_id,omitempty"`
 	Position             int           `json:"position,omitempty"`
 	PermissionOverwrites []interface{} `json:"permission_overwrites,omitempty"` // TODO: type

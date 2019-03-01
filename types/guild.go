@@ -4,37 +4,37 @@ import "github.com/bwmarrin/snowflake"
 
 // Guild represents a guild on Discord
 type Guild struct {
-	ID                          snowflake.ID  `json:"id"`
-	Name                        string        `json:"name"`
-	Icon                        string        `json:"icon"`
-	Splash                      string        `json:"splash"`
-	Owner                       bool          `json:"owner,omitempty"`
-	OwnerID                     snowflake.ID  `json:"owner_id"`
-	Permissions                 int           `json:"permissions,omitempty"`
-	Region                      string        `json:"region"`
-	AFKChannelID                snowflake.ID  `json:"afk_channel_id"`
-	AFKTimeout                  int           `json:"afk_timeout"`
-	EmbedEnabled                bool          `json:"embed_enabled,omitempty"`
-	EmbedChannelID              snowflake.ID  `json:"embed_channel_id,omitempty"`
-	VerificationLevel           int           `json:"verification_level"`
-	DefaultMessageNotifications int           `json:"default_message_notifications"`
-	ExplicitContentFilter       int           `json:"explicit_content_filter"`
-	Roles                       []interface{} `json:"roles"`  // TODO: type
-	Emojis                      []interface{} `json:"emojis"` // TODO: type
-	Features                    []string      `json:"features"`
-	MFALevel                    int           `json:"mfa_level"`
-	ApplicationID               snowflake.ID  `json:"application_id"`
-	WidgetEnabled               bool          `json:"widget_enabled,omitempty"`
-	WidgetChannelID             snowflake.ID  `json:"widget_channel_id,omitempty"`
-	SystemChannelID             snowflake.ID  `json:"system_channel_id"`
-	JoinedAt                    string        `json:"joined_at,omitempty"`
-	Large                       bool          `json:"large,omitempty"`
-	Unavailable                 bool          `json:"unavailable,omitempty"`
-	MemberCount                 int           `json:"member_count,omitempty"`
-	VoiceStates                 []interface{} `json:"voice_states,omitempty"` // TODO: type
-	Members                     []interface{} `json:"members,omitempty"`      // TODO: type
-	Channels                    []Channel     `json:"channels,omitempty"`
-	Presences                   []interface{} `json:"presences,omitempty"` // TODO: type
+	ID                          snowflake.ID               `json:"id"`
+	Name                        string                     `json:"name"`
+	Icon                        string                     `json:"icon"`
+	Splash                      string                     `json:"splash"`
+	Owner                       bool                       `json:"owner,omitempty"`
+	OwnerID                     snowflake.ID               `json:"owner_id"`
+	Permissions                 int                        `json:"permissions,omitempty"`
+	Region                      string                     `json:"region"`
+	AFKChannelID                snowflake.ID               `json:"afk_channel_id"`
+	AFKTimeout                  int                        `json:"afk_timeout"`
+	EmbedEnabled                bool                       `json:"embed_enabled,omitempty"`
+	EmbedChannelID              snowflake.ID               `json:"embed_channel_id,omitempty"`
+	VerificationLevel           VerificationLevel          `json:"verification_level"`
+	DefaultMessageNotifications MessageNotificationLevel   `json:"default_message_notifications"`
+	ExplicitContentFilter       ExplicitContentFilterLevel `json:"explicit_content_filter"`
+	Roles                       []interface{}              `json:"roles"`  // TODO: type
+	Emojis                      []interface{}              `json:"emojis"` // TODO: type
+	Features                    []string                   `json:"features"`
+	MFALevel                    MFALevel                   `json:"mfa_level"`
+	ApplicationID               snowflake.ID               `json:"application_id"`
+	WidgetEnabled               bool                       `json:"widget_enabled,omitempty"`
+	WidgetChannelID             snowflake.ID               `json:"widget_channel_id,omitempty"`
+	SystemChannelID             snowflake.ID               `json:"system_channel_id"`
+	JoinedAt                    string                     `json:"joined_at,omitempty"`
+	Large                       bool                       `json:"large,omitempty"`
+	Unavailable                 bool                       `json:"unavailable,omitempty"`
+	MemberCount                 int                        `json:"member_count,omitempty"`
+	VoiceStates                 []interface{}              `json:"voice_states,omitempty"` // TODO: type
+	Members                     []interface{}              `json:"members,omitempty"`      // TODO: type
+	Channels                    []Channel                  `json:"channels,omitempty"`
+	Presences                   []interface{}              `json:"presences,omitempty"` // TODO: type
 }
 
 // UnavailableGuild represents an unavailable guild
@@ -43,28 +43,40 @@ type UnavailableGuild struct {
 	Unavailable bool         `json:"unavailable"`
 }
 
-// message notification levels
+// MessageNotificationLevel represents a guild's message notification level
+type MessageNotificationLevel int
+
+// Message notification levels
 const (
-	MessageNotificationsAllMessages = iota
+	MessageNotificationsAllMessages MessageNotificationLevel = iota
 	MessageNotificationsOnlyMentions
 )
 
-// explicit content filter levels
+// ExplicitContentFilterLevel represents a guild's explicit content filter level
+type ExplicitContentFilterLevel int
+
+// Explicit content filter levels
 const (
-	ExplicitContentFilterDisabled = iota
+	ExplicitContentFilterDisabled ExplicitContentFilterLevel = iota
 	ExplicitContentFilterMembersWithoutRoles
 	ExplicitContentFilterAllMembers
 )
 
+// MFALevel represents a guild's MFA level
+type MFALevel int
+
 // MFA levels
 const (
-	MFALevelNone = iota
+	MFALevelNone MFALevel = iota
 	MFALevelElevated
 )
 
-// verification levels
+// VerificationLevel represents a guild's verification level
+type VerificationLevel int
+
+// Verification levels
 const (
-	VerificationLevelNone = iota
+	VerificationLevelNone VerificationLevel = iota
 	VerificationLevelLow
 	VerificationLevelMedium
 	VerificationLevelHigh

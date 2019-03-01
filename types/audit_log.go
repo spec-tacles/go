@@ -20,7 +20,7 @@ type AuditLogEntry struct {
 	Reason     string         `json:"reason"`
 }
 
-// audit log events
+// Audit log events
 const (
 	AuditLogGuildUpdate            = 1
 	AuditLogChannelCreate          = 10
@@ -68,7 +68,7 @@ type AuditChange struct {
 	Key      string      `json:"key"`
 }
 
-// audit log change keys
+// Audit log change keys
 const (
 	AuditChangeName                        = "name"
 	AuditChangeIconHash                    = "icon_hash"
