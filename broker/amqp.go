@@ -43,7 +43,7 @@ func (a *AMQP) Connect(url string) error {
 	err = ch.ExchangeDeclare(
 		a.Group,
 		"direct",
-		false,
+		true,
 		false,
 		false,
 		false,
@@ -86,7 +86,7 @@ func (a *AMQP) Subscribe(event string) error {
 
 	_, err := a.channel.QueueDeclare(
 		queueName,
-		false,
+		true,
 		false,
 		false,
 		false,
