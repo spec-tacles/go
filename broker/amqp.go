@@ -81,45 +81,52 @@ func (a *AMQP) Publish(event string, data []byte) error {
 }
 
 // Subscribe will make this client consume for the specific event
-func (a *AMQP) Subscribe(event string) error {
-	queueName := fmt.Sprintf("%s%s%s", a.Group, a.Subgroup, event)
-
-	_, err := a.channel.QueueDeclare(
-		queueName,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	err = a.channel.QueueBind(queueName, a.Group, event, false, nil)
-
-	if err != nil {
-		return err
-	}
-
-	msgs, err := a.channel.Consume(queueName, "", false, false, false, false, nil)
-
-	if err != nil {
-		return err
-	}
-
-	go func(receiveCallback func(string, []byte)) {
-		gotConsumerTag := false
-		for d := range msgs {
-			if gotConsumerTag == false {
-				a.consumerTags[d.ConsumerTag] = event
-				gotConsumerTag = true
-			}
-			d.Ack(false)
-			receiveCallback(event, d.Body)
+func (a *AMQP) Subscribe(events ...string) error {
+	for i := range events {
+		event := events[i]
+		subgroup := ""
+		if a.Subgroup == "" {
+			subgroup = a.Subgroup + ":"
 		}
-	}(a.receiveCallback)
+		queueName := fmt.Sprintf("%s:%s%s", a.Group, subgroup, event)
+
+		_, err := a.channel.QueueDeclare(
+			queueName,
+			true,
+			false,
+			false,
+			false,
+			nil,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		err = a.channel.QueueBind(queueName, a.Group, event, false, nil)
+
+		if err != nil {
+			return err
+		}
+
+		msgs, err := a.channel.Consume(queueName, "", false, false, false, false, nil)
+
+		if err != nil {
+			return err
+		}
+
+		go func(receiveCallback func(string, []byte)) {
+			gotConsumerTag := false
+			for d := range msgs {
+				if gotConsumerTag == false {
+					a.consumerTags[d.ConsumerTag] = event
+					gotConsumerTag = true
+				}
+				d.Ack(false)
+				receiveCallback(event, d.Body)
+			}
+		}(a.receiveCallback)
+	}
 
 	return nil
 }
