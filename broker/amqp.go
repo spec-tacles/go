@@ -64,9 +64,10 @@ func (a *AMQP) Close() error {
 	if err != nil {
 		return err
 	}
-    	err = a.consumeConn.Close()
-	if err != nil {
-		return err
+	if a.consumeConn != nil {
+		if err := a.consumeConn.Close(); err != nil {
+            		return err
+        	}
 	}
 	return nil
 }
