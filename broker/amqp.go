@@ -37,8 +37,6 @@ func (a *AMQP) Connect(url string) error {
 		return err
 	}
 	a.publishConn = pubConn
-    	consumeConn, err := amqp.Dial(url)
-    	a.consumeConn = consumeConn
 	ch, err := pubConn.Channel()
     	a.publishChannel = ch
 	if err != nil {
@@ -90,6 +88,8 @@ func (a *AMQP) Publish(event string, data []byte) error {
 
 // Subscribe will make this client consume for the specific event
 func (a *AMQP) Subscribe(events ...string) error {
+	consumeConn, err := amqp.Dial(url)
+    	a.consumeConn = consumeConn
 	for i := range events {
 		event := events[i]
 		subgroup := ""
