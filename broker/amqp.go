@@ -8,8 +8,10 @@ import (
 
 // AMQP is a broker for AMQP clients. Probably most useful for RabbitMQ.
 type AMQP struct {
-	conn            *amqp.Connection
-	channel         *amqp.Channel
+	publishConn *amqp.Connection
+    publishChannel *amqp.Channel
+    consumeConn *amqp.Connection
+
 	receiveCallback func(string, []byte)
 	consumerTags    map[string]string
 
@@ -30,16 +32,18 @@ func NewAMQP(group string, subgroup string, receiveCallback func(string, []byte)
 
 // Connect will connect this client to the AQMP Server
 func (a *AMQP) Connect(url string) error {
-	conn, err := amqp.Dial(url)
+	pubConn, err := amqp.Dial(url)
 	if err != nil {
 		return err
 	}
-	a.conn = conn
-	ch, err := conn.Channel()
+	a.publishConn = pubConn
+    consumeConn, err := amqp.Dial(url)
+    a.consumeConn = consumeConn
+	ch, err := pubConn.Channel()
+    a.publishChannel = ch
 	if err != nil {
 		return err
 	}
-	a.channel = ch
 	err = ch.ExchangeDeclare(
 		a.Group,
 		"direct",
@@ -52,22 +56,26 @@ func (a *AMQP) Connect(url string) error {
 	return err
 }
 
-// Close implements io.Closer and Closes the Channel & Connection of this Client
+// Close implements io.Closer and closes the publishing Channel & Connection of this Client
 func (a *AMQP) Close() error {
-	err := a.channel.Close()
+	err := a.publishChannel.Close()
 	if err != nil {
 		return err
 	}
-	err = a.conn.Close()
+	err = a.publishConn.Close()
+	if err != nil {
+		return err
+	}
+    err = a.consumeConn.Close()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// Publish sends data to aqmp
+// Publish sends data to amqp
 func (a *AMQP) Publish(event string, data []byte) error {
-	err := a.channel.Publish(
+	err := a.publishChannel.Publish(
 		a.Group,
 		event,
 		false,
@@ -89,8 +97,12 @@ func (a *AMQP) Subscribe(events ...string) error {
 			subgroup = a.Subgroup + ":"
 		}
 		queueName := fmt.Sprintf("%s:%s%s", a.Group, subgroup, event)
+        ch, err := a.consumeConn.Channel()
+        if err != nil {
+			return err
+		}
 
-		_, err := a.channel.QueueDeclare(
+		_, err = ch.QueueDeclare(
 			queueName,
 			true,
 			false,
@@ -103,13 +115,13 @@ func (a *AMQP) Subscribe(events ...string) error {
 			return err
 		}
 
-		err = a.channel.QueueBind(queueName, a.Group, event, false, nil)
+		err = ch.QueueBind(queueName, a.Group, event, false, nil)
 
 		if err != nil {
 			return err
 		}
 
-		msgs, err := a.channel.Consume(queueName, "", false, false, false, false, nil)
+		msgs, err := ch.Consume(queueName, "", false, false, false, false, nil)
 
 		if err != nil {
 			return err
@@ -132,7 +144,7 @@ func (a *AMQP) Subscribe(events ...string) error {
 }
 
 // Unsubscribe will make this client cancel the subscription for specific events
-func (a *AMQP) Unsubscribe(event string) error {
+/*func (a *AMQP) Unsubscribe(event string) error {
 	err := a.channel.Cancel(a.consumerTags[event], false)
 
 	if err != nil {
@@ -143,3 +155,4 @@ func (a *AMQP) Unsubscribe(event string) error {
 
 	return nil
 }
+*/
