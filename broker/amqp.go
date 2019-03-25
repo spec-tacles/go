@@ -9,8 +9,8 @@ import (
 // AMQP is a broker for AMQP clients. Probably most useful for RabbitMQ.
 type AMQP struct {
 	publishConn *amqp.Connection
-    publishChannel *amqp.Channel
-    consumeConn *amqp.Connection
+    	publishChannel *amqp.Channel
+    	consumeConn *amqp.Connection
 
 	receiveCallback func(string, []byte)
 	consumerTags    map[string]string
@@ -37,10 +37,10 @@ func (a *AMQP) Connect(url string) error {
 		return err
 	}
 	a.publishConn = pubConn
-    consumeConn, err := amqp.Dial(url)
-    a.consumeConn = consumeConn
+    	consumeConn, err := amqp.Dial(url)
+    	a.consumeConn = consumeConn
 	ch, err := pubConn.Channel()
-    a.publishChannel = ch
+    	a.publishChannel = ch
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (a *AMQP) Close() error {
 	if err != nil {
 		return err
 	}
-    err = a.consumeConn.Close()
+    	err = a.consumeConn.Close()
 	if err != nil {
 		return err
 	}
@@ -97,8 +97,8 @@ func (a *AMQP) Subscribe(events ...string) error {
 			subgroup = a.Subgroup + ":"
 		}
 		queueName := fmt.Sprintf("%s:%s%s", a.Group, subgroup, event)
-        ch, err := a.consumeConn.Channel()
-        if err != nil {
+        	ch, err := a.consumeConn.Channel()
+        	if err != nil {
 			return err
 		}
 
