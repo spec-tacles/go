@@ -117,6 +117,7 @@ func (a *AMQP) Subscribe(events ...string) error {
 
 		firstMessage := <-msgs
 		a.consumerTags[firstMessage.ConsumerTag] = event
+		firstMessage.Ack(false)
 		a.receiveCallback(event, firstMessage.Body)
 
 		go func(receiveCallback func(string, []byte)) {
