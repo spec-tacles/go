@@ -2,20 +2,23 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+	"os"
+	"time"
+
 	"github.com/spec-tacles/spectacles.go/broker"
 	"github.com/spec-tacles/spectacles.go/gateway"
 	"github.com/spec-tacles/spectacles.go/rest"
 	"github.com/spec-tacles/spectacles.go/types"
 	"github.com/spf13/cobra"
-	"log"
-	"os"
-	"time"
 )
 
 var amqpUrl string
 var amqpGroup string
 var token string
 var shardCount int
+
+var brokerConnected bool
 
 var logger = log.New(os.Stdout, "[CMD] ", log.Ldate|log.Ltime|log.Lshortfile)
 
@@ -28,8 +31,7 @@ var rootCmd = &cobra.Command{
 	Short: "Connects to the Discord websocket API using spectacles.go",
 	Run: func(cmd *cobra.Command, args []string) {
 		amqp := broker.NewAMQP(amqpGroup, "", func(string, []byte) {})
-		done := make(chan bool)
-		go tryConnect(amqp, done)
+		go tryConnect(amqp)
 
 		manager := gateway.NewManager(&gateway.ManagerOptions{
 			ShardOptions: &gateway.ShardOptions{
@@ -38,21 +40,18 @@ var rootCmd = &cobra.Command{
 				},
 			},
 			OnPacket: func(shard int, d *types.ReceivePacket) {
-				pk, err := json.Marshal(&struct {
-					Shard int         `json:"shard_id"`
-					Data  interface{} `json:"data"`
-				}{shard, d.Data})
+				pk, err := json.Marshal(d)
 				if err != nil {
+					logger.Printf("json encode error: %v", err)
 					return
 				}
 
-				select {
-				case done <- true:
+				if brokerConnected {
 					amqp.Publish(string(d.Event), pk)
 				}
 			},
 			REST:     rest.NewClient(token),
-			LogLevel: gateway.LogLevelDebug,
+			LogLevel: gateway.LogLevelInfo,
 		})
 
 		if err := manager.Start(); err != nil {
@@ -62,18 +61,23 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func tryConnect(amqp *broker.AMQP, done chan bool) {
+// tryConnect exponentially increases the retry interval, stopping at 80 seconds
+func tryConnect(amqp *broker.AMQP) {
+	retryInterval := time.Second * 5
 	for err := amqp.Connect(amqpUrl); err != nil; {
-		logger.Printf("failed to connect to amqp, retrying in 30 seconds: %v\n", err)
+		logger.Printf("failed to connect to amqp, retrying in %d seconds: %v\n", retryInterval, err)
 		time.Sleep(time.Second * 30)
+		if retryInterval != 80 {
+			retryInterval *= 2
+		}
 	}
 
-	done <- true
+	brokerConnected = true
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&amqpGroup, "amqpgroup", "g", "", "The AMQP group to send Discord events to.")
-	rootCmd.Flags().StringVarP(&amqpUrl, "amqpurl", "u", "", "The AMQP URL to connect to.")
+	rootCmd.Flags().StringVarP(&amqpGroup, "group", "g", "", "The broker group to send Discord events to.")
+	rootCmd.Flags().StringVarP(&amqpUrl, "purl", "u", "", "The broker URL to connect to.")
 	rootCmd.Flags().StringVarP(&token, "token", "t", "", "The Discord token used to connect to the gateway.")
 	rootCmd.Flags().IntVarP(&shardCount, "shardcount", "c", 0, "The number of shards to spawn.")
 }
