@@ -13,14 +13,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var amqpUrl string
-var amqpGroup string
-var token string
+var amqpUrl, amqpGroup, token, logLevel string
 var shardCount int
 
 var brokerConnected bool
 
 var logger = log.New(os.Stdout, "[CMD] ", log.Ldate|log.Ltime|log.Lshortfile)
+var logLevels = map[string]int{
+	"suppress": gateway.LogLevelSuppress,
+	"info":     gateway.LogLevelInfo,
+	"warn":     gateway.LogLevelWarn,
+	"debug":    gateway.LogLevelDebug,
+	"error":    gateway.LogLevelError,
+}
 
 func main() {
 	rootCmd.Execute()
@@ -51,7 +56,7 @@ var rootCmd = &cobra.Command{
 				}
 			},
 			REST:     rest.NewClient(token),
-			LogLevel: gateway.LogLevelInfo,
+			LogLevel: logLevels[logLevel],
 		})
 
 		if err := manager.Start(); err != nil {
@@ -80,4 +85,5 @@ func init() {
 	rootCmd.Flags().StringVarP(&amqpUrl, "purl", "u", "", "The broker URL to connect to.")
 	rootCmd.Flags().StringVarP(&token, "token", "t", "", "The Discord token used to connect to the gateway.")
 	rootCmd.Flags().IntVarP(&shardCount, "shardcount", "c", 0, "The number of shards to spawn.")
+	rootCmd.Flags().StringVarP(&logLevel, "loglevel", "l", "info", "The log level.")
 }
