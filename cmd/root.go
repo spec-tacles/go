@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 	"time"
@@ -36,6 +35,7 @@ var rootCmd = &cobra.Command{
 	Short: "Connects to the Discord websocket API using spectacles.go",
 	Run: func(cmd *cobra.Command, args []string) {
 		amqp := broker.NewAMQP(amqpGroup, "", func(string, []byte) {})
+		notSended := make([]*types.ReceivePacket, 0, 100)
 		go tryConnect(amqp)
 
 		manager := gateway.NewManager(&gateway.ManagerOptions{
@@ -45,14 +45,16 @@ var rootCmd = &cobra.Command{
 				},
 			},
 			OnPacket: func(shard int, d *types.ReceivePacket) {
-				pk, err := json.Marshal(d)
-				if err != nil {
-					logger.Printf("json encode error: %v", err)
-					return
-				}
-
 				if brokerConnected {
-					amqp.Publish(string(d.Event), pk)
+					// send packets that couldn't be sent due to AMQP connection problems.
+					if len(notSended) > 0 {
+						for _, pk := range notSended {
+							amqp.Publish(string(pk.Event), pk.Data)
+						}
+					}
+					amqp.Publish(string(d.Event), d.Data)
+				} else {
+					notSended = append(notSended, d)
 				}
 			},
 			REST:     rest.NewClient(token),
@@ -71,7 +73,7 @@ func tryConnect(amqp *broker.AMQP) {
 	retryInterval := time.Second * 5
 	for err := amqp.Connect(amqpUrl); err != nil; {
 		logger.Printf("failed to connect to amqp, retrying in %d seconds: %v\n", retryInterval, err)
-		time.Sleep(time.Second * 30)
+		time.Sleep(retryInterval)
 		if retryInterval != 80 {
 			retryInterval *= 2
 		}
@@ -82,7 +84,7 @@ func tryConnect(amqp *broker.AMQP) {
 
 func init() {
 	rootCmd.Flags().StringVarP(&amqpGroup, "group", "g", "", "The broker group to send Discord events to.")
-	rootCmd.Flags().StringVarP(&amqpUrl, "purl", "u", "", "The broker URL to connect to.")
+	rootCmd.Flags().StringVarP(&amqpUrl, "url", "u", "", "The broker URL to connect to.")
 	rootCmd.Flags().StringVarP(&token, "token", "t", "", "The Discord token used to connect to the gateway.")
 	rootCmd.Flags().IntVarP(&shardCount, "shardcount", "c", 0, "The number of shards to spawn.")
 	rootCmd.Flags().StringVarP(&logLevel, "loglevel", "l", "info", "The log level.")
