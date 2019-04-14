@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"log"
@@ -26,11 +26,7 @@ var logLevels = map[string]int{
 	"error":    gateway.LogLevelError,
 }
 
-func main() {
-	rootCmd.Execute()
-}
-
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "spectacles",
 	Short: "Connects to the Discord websocket API using spectacles.go",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -44,7 +40,9 @@ var rootCmd = &cobra.Command{
 				},
 			},
 			OnPacket: func(shard int, d *types.ReceivePacket) {
-				amqp.Publish(string(d.Event), d.Data)
+				if brokerConnected {
+					amqp.Publish(string(d.Event), d.Data)
+				}
 			},
 			REST:     rest.NewClient(token),
 			LogLevel: logLevels[logLevel],
@@ -72,9 +70,9 @@ func tryConnect(amqp *broker.AMQP) {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&amqpGroup, "group", "g", "", "The broker group to send Discord events to.")
-	rootCmd.Flags().StringVarP(&amqpUrl, "url", "u", "", "The broker URL to connect to.")
-	rootCmd.Flags().StringVarP(&token, "token", "t", "", "The Discord token used to connect to the gateway.")
-	rootCmd.Flags().IntVarP(&shardCount, "shardcount", "c", 0, "The number of shards to spawn.")
-	rootCmd.Flags().StringVarP(&logLevel, "loglevel", "l", "info", "The log level.")
+	RootCmd.Flags().StringVarP(&amqpGroup, "group", "g", "", "The broker group to send Discord events to.")
+	RootCmd.Flags().StringVarP(&amqpUrl, "url", "u", "", "The broker URL to connect to.")
+	RootCmd.Flags().StringVarP(&token, "token", "t", "", "The Discord token used to connect to the gateway.")
+	RootCmd.Flags().IntVarP(&shardCount, "shardcount", "c", 0, "The number of shards to spawn.")
+	RootCmd.Flags().StringVarP(&logLevel, "loglevel", "l", "info", "The log level.")
 }
