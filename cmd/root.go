@@ -35,8 +35,7 @@ var rootCmd = &cobra.Command{
 	Short: "Connects to the Discord websocket API using spectacles.go",
 	Run: func(cmd *cobra.Command, args []string) {
 		amqp := broker.NewAMQP(amqpGroup, "", func(string, []byte) {})
-		notSended := make([]*types.ReceivePacket, 0, 100)
-		go tryConnect(amqp)
+		tryConnect(amqp)
 
 		manager := gateway.NewManager(&gateway.ManagerOptions{
 			ShardOptions: &gateway.ShardOptions{
@@ -45,17 +44,7 @@ var rootCmd = &cobra.Command{
 				},
 			},
 			OnPacket: func(shard int, d *types.ReceivePacket) {
-				if brokerConnected {
-					// send packets that couldn't be sent due to AMQP connection problems.
-					if len(notSended) > 0 {
-						for _, pk := range notSended {
-							amqp.Publish(string(pk.Event), pk.Data)
-						}
-					}
-					amqp.Publish(string(d.Event), d.Data)
-				} else {
-					notSended = append(notSended, d)
-				}
+				amqp.Publish(string(d.Event), d.Data)
 			},
 			REST:     rest.NewClient(token),
 			LogLevel: logLevels[logLevel],
