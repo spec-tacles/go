@@ -115,13 +115,13 @@ func (a *AMQP) Subscribe(events ...string) error {
 			return err
 		}
 
+		firstMessage := <-msgs
+		a.consumerTags[firstMessage.ConsumerTag] = event
+		firstMessage.Ack(false)
+		a.receiveCallback(event, firstMessage.Body)
+
 		go func(receiveCallback func(string, []byte)) {
-			gotConsumerTag := false
 			for d := range msgs {
-				if gotConsumerTag == false {
-					a.consumerTags[d.ConsumerTag] = event
-					gotConsumerTag = true
-				}
 				d.Ack(false)
 				receiveCallback(event, d.Body)
 			}

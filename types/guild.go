@@ -19,7 +19,7 @@ type Guild struct {
 	VerificationLevel           VerificationLevel          `json:"verification_level"`
 	DefaultMessageNotifications MessageNotificationLevel   `json:"default_message_notifications"`
 	ExplicitContentFilter       ExplicitContentFilterLevel `json:"explicit_content_filter"`
-	Roles                       []interface{}              `json:"roles"`  // TODO: type
+	Roles                       []Role                     `json:"roles"`
 	Emojis                      []interface{}              `json:"emojis"` // TODO: type
 	Features                    []string                   `json:"features"`
 	MFALevel                    MFALevel                   `json:"mfa_level"`

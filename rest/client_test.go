@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/joho/godotenv"
-	"github.com/spec-tacles/spectacles.go/rest"
+	"github.com/spec-tacles/go/rest"
 )
 
 func init() {
