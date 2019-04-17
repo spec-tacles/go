@@ -15,8 +15,6 @@ import (
 var amqpUrl, amqpGroup, token, logLevel string
 var shardCount int
 
-var brokerConnected bool
-
 var logger = log.New(os.Stdout, "[CMD] ", log.Ldate|log.Ltime|log.Lshortfile)
 var logLevels = map[string]int{
 	"suppress": gateway.LogLevelSuppress,
@@ -63,8 +61,6 @@ func tryConnect(amqp *broker.AMQP) {
 			retryInterval *= 2
 		}
 	}
-
-	brokerConnected = true
 }
 
 func init() {
