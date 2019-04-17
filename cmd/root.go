@@ -5,10 +5,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/spec-tacles/spectacles.go/broker"
-	"github.com/spec-tacles/spectacles.go/gateway"
-	"github.com/spec-tacles/spectacles.go/rest"
-	"github.com/spec-tacles/spectacles.go/types"
+	"github.com/spec-tacles/go/broker"
+	"github.com/spec-tacles/go/gateway"
+	"github.com/spec-tacles/go/rest"
+	"github.com/spec-tacles/go/types"
 	"github.com/spf13/cobra"
 )
 
@@ -40,9 +40,7 @@ var RootCmd = &cobra.Command{
 				},
 			},
 			OnPacket: func(shard int, d *types.ReceivePacket) {
-				if brokerConnected {
-					amqp.Publish(string(d.Event), d.Data)
-				}
+				amqp.Publish(string(d.Event), d.Data)
 			},
 			REST:     rest.NewClient(token),
 			LogLevel: logLevels[logLevel],
