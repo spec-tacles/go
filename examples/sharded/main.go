@@ -21,7 +21,7 @@ func main() {
 			LogLevel: gateway.LogLevelDebug,
 		},
 		REST: rest.NewClient(token),
-		OnPacket: func(shard int, r *types.ReceivePacket) {
+		OnPacket: func(_ *gateway.Manager, shard int, r *types.ReceivePacket) {
 			fmt.Printf("Received op %d, event %s, and seq %d on shard %d\n", r.Op, r.Event, r.Seq, shard)
 		},
 		LogLevel: gateway.LogLevelInfo,

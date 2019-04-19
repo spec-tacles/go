@@ -23,7 +23,7 @@ type ManagerOptions struct {
 	ServerIndex int
 	ServerCount int
 
-	OnPacket func(int, *types.ReceivePacket)
+	OnPacket func(*Manager, int, *types.ReceivePacket)
 
 	Logger   Logger
 	LogLevel int

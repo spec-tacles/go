@@ -59,7 +59,7 @@ func (m *Manager) Start() (err error) {
 		{
 			id := i
 			opts.OnPacket = func(r *types.ReceivePacket) {
-				m.opts.OnPacket(id, r)
+				m.opts.OnPacket(m, id, r)
 			}
 		}
 

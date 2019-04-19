@@ -37,7 +37,7 @@ var RootCmd = &cobra.Command{
 					Token: token,
 				},
 			},
-			OnPacket: func(shard int, d *types.ReceivePacket) {
+			OnPacket: func(_ *gateway.Manager, shard int, d *types.ReceivePacket) {
 				amqp.Publish(string(d.Event), d.Data)
 			},
 			REST:     rest.NewClient(token),
