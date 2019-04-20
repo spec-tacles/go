@@ -4,7 +4,7 @@ import "github.com/bwmarrin/snowflake"
 
 // Guild represents a guild on Discord
 type Guild struct {
-	ID                          snowflake.ID               `json:"id"`
+	ID                          snowflake.ID               `json:"id,omitempty"`
 	Name                        string                     `json:"name"`
 	Icon                        string                     `json:"icon"`
 	Splash                      string                     `json:"splash"`
