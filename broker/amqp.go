@@ -53,21 +53,19 @@ func (a *AMQP) Connect(url string) error {
 }
 
 // Close implements io.Closer and Closes the Channel & Connection of this Client
-func (a *AMQP) Close() error {
-	err := a.channel.Close()
+func (a *AMQP) Close() (err error) {
+	err = a.channel.Close()
 	if err != nil {
-		return err
+		return
 	}
+
 	err = a.conn.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return
 }
 
 // Publish sends data to aqmp
 func (a *AMQP) Publish(event string, data []byte) error {
-	err := a.channel.Publish(
+	return a.channel.Publish(
 		a.Group,
 		event,
 		false,
@@ -77,70 +75,65 @@ func (a *AMQP) Publish(event string, data []byte) error {
 			ContentType: "application/json",
 		},
 	)
-	return err
 }
 
 // Subscribe will make this client consume for the specific event
-func (a *AMQP) Subscribe(events ...string) error {
-	for i := range events {
-		event := events[i]
-		subgroup := ""
-		if a.Subgroup == "" {
-			subgroup = a.Subgroup + ":"
-		}
-		queueName := fmt.Sprintf("%s:%s%s", a.Group, subgroup, event)
+func (a *AMQP) Subscribe(event string) (err error) {
+	subgroup := ""
+	if a.Subgroup == "" {
+		subgroup = a.Subgroup + ":"
+	}
+	queueName := fmt.Sprintf("%s:%s%s", a.Group, subgroup, event)
 
-		_, err := a.channel.QueueDeclare(
-			queueName,
-			true,
-			false,
-			false,
-			false,
-			nil,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		err = a.channel.QueueBind(queueName, a.Group, event, false, nil)
-
-		if err != nil {
-			return err
-		}
-
-		msgs, err := a.channel.Consume(queueName, "", false, false, false, false, nil)
-
-		if err != nil {
-			return err
-		}
-
-		firstMessage := <-msgs
-		a.consumerTags[firstMessage.ConsumerTag] = event
-		firstMessage.Ack(false)
-		a.receiveCallback(event, firstMessage.Body)
-
-		go func(receiveCallback func(string, []byte)) {
-			for d := range msgs {
-				d.Ack(false)
-				receiveCallback(event, d.Body)
-			}
-		}(a.receiveCallback)
+	_, err = a.channel.QueueDeclare(
+		queueName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return
 	}
 
-	return nil
+	err = a.channel.QueueBind(queueName, a.Group, event, false, nil)
+	if err != nil {
+		return
+	}
+
+	msgs, err := a.channel.Consume(queueName, "", false, false, false, false, nil)
+	if err != nil {
+		return
+	}
+
+	firstMessage := <-msgs
+	a.consumerTags[firstMessage.ConsumerTag] = event
+	err = firstMessage.Ack(false)
+	if err != nil {
+		return
+	}
+	a.receiveCallback(event, firstMessage.Body)
+
+	for d := range msgs {
+		err = d.Ack(false)
+		if err != nil {
+			return
+		}
+
+		a.receiveCallback(event, d.Body)
+	}
+	return
 }
 
 // Unsubscribe will make this client cancel the subscription for specific events
 func (a *AMQP) Unsubscribe(event string) error {
 	err := a.channel.Cancel(a.consumerTags[event], false)
-
 	if err != nil {
 		return err
 	}
 
-	a.consumerTags[event] = ""
-
+	delete(a.consumerTags, event)
 	return nil
 }
 
