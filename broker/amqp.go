@@ -10,7 +10,7 @@ import (
 type AMQP struct {
 	conn            *amqp.Connection
 	channel         *amqp.Channel
-	receiveCallback func(string, []byte)
+	receiveCallback EventHandler
 	consumerTags    map[string]string
 
 	Group    string
@@ -18,7 +18,7 @@ type AMQP struct {
 }
 
 // NewAMQP creates a new AMQP broker.
-func NewAMQP(group string, subgroup string, receiveCallback func(string, []byte)) *AMQP {
+func NewAMQP(group string, subgroup string, receiveCallback EventHandler) *AMQP {
 	return &AMQP{
 		receiveCallback: receiveCallback,
 		consumerTags:    make(map[string]string),
@@ -142,4 +142,9 @@ func (a *AMQP) Unsubscribe(event string) error {
 	a.consumerTags[event] = ""
 
 	return nil
+}
+
+// SetCallback sets the function to be called when events are received
+func (a *AMQP) SetCallback(handler EventHandler) {
+	a.receiveCallback = handler
 }
