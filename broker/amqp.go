@@ -79,9 +79,9 @@ func (a *AMQP) Publish(event string, data []byte) error {
 
 // Subscribe will make this client consume for the specific event
 func (a *AMQP) Subscribe(event string) (err error) {
-	subgroup := ""
-	if a.Subgroup == "" {
-		subgroup = a.Subgroup + ":"
+	subgroup := a.Subgroup
+	if subgroup != "" {
+		subgroup += ":"
 	}
 	queueName := fmt.Sprintf("%s:%s%s", a.Group, subgroup, event)
 
@@ -97,7 +97,7 @@ func (a *AMQP) Subscribe(event string) (err error) {
 		return
 	}
 
-	err = a.channel.QueueBind(queueName, a.Group, event, false, nil)
+	err = a.channel.QueueBind(queueName, event, a.Group, false, nil)
 	if err != nil {
 		return
 	}
@@ -108,12 +108,12 @@ func (a *AMQP) Subscribe(event string) (err error) {
 	}
 
 	firstMessage := <-msgs
-	a.consumerTags[firstMessage.ConsumerTag] = event
+	a.consumerTags[event] = firstMessage.ConsumerTag
 	err = firstMessage.Ack(false)
 	if err != nil {
 		return
 	}
-	a.receiveCallback(event, firstMessage.Body)
+	go a.receiveCallback(event, firstMessage.Body)
 
 	for d := range msgs {
 		err = d.Ack(false)
@@ -121,7 +121,7 @@ func (a *AMQP) Subscribe(event string) (err error) {
 			return
 		}
 
-		a.receiveCallback(event, d.Body)
+		go a.receiveCallback(event, d.Body)
 	}
 	return
 }
