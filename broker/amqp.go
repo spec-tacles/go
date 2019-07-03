@@ -162,3 +162,8 @@ func (a *AMQP) Unsubscribe(event string) error {
 func (a *AMQP) SetCallback(handler EventHandler) {
 	a.receiveCallback = handler
 }
+
+// NotifyClose notifies the given channel of connection closures
+func (a *AMQP) NotifyClose(rcv chan *amqp.Error) chan *amqp.Error {
+	return a.conn.NotifyClose(rcv)
+}
