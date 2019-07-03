@@ -1,10 +1,15 @@
 package broker
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/streadway/amqp"
 )
+
+// ErrDisconnected occurs when trying to do something that requires a connection but one was
+// unavailable
+var ErrDisconnected = errors.New("disconnected from the broker")
 
 // AMQP is a broker for AMQP clients. Probably most useful for RabbitMQ.
 type AMQP struct {
@@ -54,6 +59,10 @@ func (a *AMQP) Connect(url string) error {
 
 // Close implements io.Closer and Closes the Channel & Connection of this Client
 func (a *AMQP) Close() (err error) {
+	if a.channel == nil {
+		return ErrDisconnected
+	}
+
 	err = a.channel.Close()
 	if err != nil {
 		return
@@ -65,6 +74,10 @@ func (a *AMQP) Close() (err error) {
 
 // Publish sends data to aqmp
 func (a *AMQP) Publish(event string, data []byte) error {
+	if a.channel == nil {
+		return ErrDisconnected
+	}
+
 	return a.channel.Publish(
 		a.Group,
 		event,
@@ -79,6 +92,10 @@ func (a *AMQP) Publish(event string, data []byte) error {
 
 // Subscribe will make this client consume for the specific event
 func (a *AMQP) Subscribe(event string) (err error) {
+	if a.channel == nil {
+		return ErrDisconnected
+	}
+
 	subgroup := a.Subgroup
 	if subgroup != "" {
 		subgroup += ":"
@@ -128,6 +145,10 @@ func (a *AMQP) Subscribe(event string) (err error) {
 
 // Unsubscribe will make this client cancel the subscription for specific events
 func (a *AMQP) Unsubscribe(event string) error {
+	if a.channel == nil {
+		return ErrDisconnected
+	}
+
 	err := a.channel.Cancel(a.consumerTags[event], false)
 	if err != nil {
 		return err
