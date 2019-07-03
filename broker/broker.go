@@ -10,4 +10,5 @@ type Broker interface {
 	Subscribe(event string) error
 	Unsubscribe(event string) error
 	SetCallback(handler EventHandler)
+	NotifyClose(chan error) error
 }

@@ -164,6 +164,19 @@ func (a *AMQP) SetCallback(handler EventHandler) {
 }
 
 // NotifyClose notifies the given channel of connection closures
-func (a *AMQP) NotifyClose(rcv chan *amqp.Error) chan *amqp.Error {
-	return a.conn.NotifyClose(rcv)
+func (a *AMQP) NotifyClose(rcv chan error) error {
+	if a.conn == nil {
+		return ErrDisconnected
+	}
+
+	closes := make(chan *amqp.Error) // gets closed automatically
+	a.conn.NotifyClose(closes)
+	go func() {
+		for amqpErr := range closes {
+			rcv <- errors.New(amqpErr.Error())
+		}
+
+		rcv <- nil
+	}()
+	return nil
 }

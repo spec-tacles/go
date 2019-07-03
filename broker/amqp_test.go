@@ -79,8 +79,13 @@ func TestSubscribe(t *testing.T) {
 func TestClose(t *testing.T) {
 	connect()
 
-	err := a.Close()
+	closes := make(chan error)
+	err := a.NotifyClose(closes)
 	assert.NoError(t, err)
+
+	err = a.Close()
+	assert.NoError(t, err)
+	assert.NoError(t, <-closes)
 
 	err = a.Publish("foo", []byte("bar"))
 	assert.Error(t, err)
