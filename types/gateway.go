@@ -44,6 +44,25 @@ const (
 	GatewayOpHeartbeatACK
 )
 
+// Gateway intent bitfields
+const (
+	IntentGuilds uint = 1 << iota
+	IntentGuildMembers
+	IntentGuildBans
+	IntentGuildEmojis
+	IntentGuildIntegrations
+	IntentGuildWebhooks
+	IntentGuildInvites
+	IntentGuildVoiceStates
+	IntentGuildPresences
+	IntentGuildMessages
+	IntentGuildMessageReactions
+	IntentGuildMessageTyping
+	IntentDirectMessages
+	IntentDirectMessageReactions
+	IntentDirectMessageTyping
+)
+
 // GatewayEvent represents a gateway packet's event name
 type GatewayEvent string
 
@@ -95,6 +114,7 @@ type Identify struct {
 	LargeThreshold int                 `json:"large_threshold,omitempty"`
 	Shard          []int               `json:"shard,omitempty"`
 	Presence       *Activity           `json:"presence,omitempty"`
+	Intents        int                 `json:"intents,omitempty"`
 }
 
 // IdentifyProperties represents properties sent in an identify packet
