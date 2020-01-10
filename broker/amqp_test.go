@@ -7,16 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type Packet struct {
-	Event string
-	Data  []byte
-}
-
 var connected = false
-var rcv = make(chan *Packet)
-var a = NewAMQP("test", "", func(event string, data []byte) {
-	rcv <- &Packet{event, data}
-})
+var a = NewAMQP("test", "", cb)
 
 func connect() {
 	if connected {
