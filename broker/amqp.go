@@ -3,6 +3,7 @@ package broker
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/streadway/amqp"
 )
@@ -72,21 +73,34 @@ func (a *AMQP) Close() (err error) {
 	return
 }
 
-// Publish sends data to aqmp
+// Publish sends data to AMQP
 func (a *AMQP) Publish(event string, data []byte) error {
 	if a.channel == nil {
 		return ErrDisconnected
 	}
 
+	return a.publish(event, amqp.Publishing{
+		Body:        data,
+		ContentType: "application/json",
+	})
+}
+
+// PublishOptions sends data to AMQP
+func (a *AMQP) PublishOptions(opts PublishOptions) error {
+	return a.publish(opts.Event, amqp.Publishing{
+		Body:        opts.Data,
+		ContentType: "application/json",
+		Expiration:  strconv.FormatInt(opts.Timeout.Milliseconds(), 10),
+	})
+}
+
+func (a *AMQP) publish(event string, opts amqp.Publishing) error {
 	return a.channel.Publish(
 		a.Group,
 		event,
 		false,
 		false,
-		amqp.Publishing{
-			Body:        data,
-			ContentType: "application/json",
-		},
+		opts,
 	)
 }
 

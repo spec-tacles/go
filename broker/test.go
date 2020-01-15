@@ -5,8 +5,7 @@ type testReadWriter struct {
 }
 
 func (r *testReadWriter) Read(d []byte) (int, error) {
-	b := <-r.C
-	return copy(d, b), nil
+	return copy(d, <-r.C), nil
 }
 
 func (r *testReadWriter) Write(d []byte) (int, error) {

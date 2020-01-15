@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-
 func TestRWSubscribe(t *testing.T) {
 	var rw = &testReadWriter{
 		C: make(chan []byte),
@@ -16,16 +15,13 @@ func TestRWSubscribe(t *testing.T) {
 	err := b.Subscribe("foo")
 	assert.NoError(t, err)
 
-	d, err := json.Marshal(&IOPacket{
-		Event: "foo",
-		Data:  []byte("bar"),
-	})
+	d := json.RawMessage(`{"event":"foo","data":["bar"]}`)
 	assert.NoError(t, err)
 	go rw.Write(d)
 
 	res := <-rcv
 	assert.Equal(t, "foo", res.Event)
-	assert.EqualValues(t, []byte("bar"), res.Data)
+	assert.EqualValues(t, []byte("[\"bar\"]"), res.Data)
 }
 
 func TestRWPublish(t *testing.T) {
@@ -35,13 +31,13 @@ func TestRWPublish(t *testing.T) {
 	var b = NewRW(rw, rw, cb)
 
 	go func() {
-		err := b.Publish("foo", []byte("bar"))
+		err := b.Publish("foo", []byte("[\"bar\"]"))
 		assert.NoError(t, err)
 	}()
 
 	expected, err := json.Marshal(&IOPacket{
 		Event: "foo",
-		Data:  []byte("bar"),
+		Data:  []byte("[\"bar\"]"),
 	})
 	assert.NoError(t, err)
 

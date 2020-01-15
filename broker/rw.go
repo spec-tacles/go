@@ -2,8 +2,8 @@ package broker
 
 import (
 	"encoding/json"
-	"log"
 	"io"
+	"log"
 	"sync"
 )
 
@@ -19,8 +19,8 @@ type RWBroker struct {
 
 // IOPacket represents a JSON packet transmitted through an RW broker
 type IOPacket struct {
-	Event string `json:"event"`
-	Data  []byte `json:"data"`
+	Event string          `json:"event"`
+	Data  json.RawMessage `json:"data"`
 }
 
 // NewRW creates a new Read/Write broker
@@ -78,6 +78,11 @@ func (b *RWBroker) Publish(event string, data []byte) (err error) {
 
 	_, err = b.W.Write(pk)
 	return
+}
+
+// PublishOptions calls Publish with the event and data specified in the options
+func (b *RWBroker) PublishOptions(opts PublishOptions) error {
+	return b.Publish(opts.Event, opts.Data)
 }
 
 // Subscribe implements Broker interface
