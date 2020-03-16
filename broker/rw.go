@@ -39,7 +39,9 @@ func NewRW(r io.Reader, w io.Writer, callback EventHandler) *RWBroker {
 		pk := &IOPacket{}
 		for {
 			if err := decoder.Decode(pk); err != nil {
-				log.Printf("error decoding JSON: %s", err)
+				if err != io.EOF {
+					log.Printf("error decoding JSON: %s", err)
+				}
 				break
 			}
 
