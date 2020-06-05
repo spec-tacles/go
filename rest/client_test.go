@@ -8,6 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/spec-tacles/go/rest"
+	"github.com/spec-tacles/go/types"
 )
 
 func init() {
@@ -38,6 +39,14 @@ func TestDo(t *testing.T) {
 	}
 }
 
-func TestDoJSON(t *testing.T) {
-	//
+func TestGateway(t *testing.T) {
+	var info types.GatewayBot
+	client := rest.NewClient(os.Getenv("DISCORD_TOKEN"))
+	err := client.DoJSON(http.MethodGet, "/gateway/bot", nil, &info)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Logf("%+v", info)
 }

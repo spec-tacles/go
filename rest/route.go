@@ -29,7 +29,7 @@ func MakeRoute(p string) (route string) {
 			return params[0]
 		}
 
-		var route = path.Join(params[0], params[1])
+		var route = path.Join(PathSep, params[0], params[1])
 		return buildRoute(params, route, 2)
 	}
 
@@ -43,7 +43,7 @@ func buildRoute(params []string, route string, i int) string {
 		if unicode.IsDigit(r) {
 			route += IDNotation
 		} else {
-			route += path.Join(params[i])
+			route += PathSep + params[i]
 		}
 	}
 

@@ -11,6 +11,7 @@ var routes = map[string]string{
 	"/channels/1":               "/channels/1",
 	"/users":                    "/users",
 	"/users/1":                  "/users/:id",
+	"/gateway/bot":              "/gateway/bot",
 }
 
 func TestMakeRoute(t *testing.T) {
