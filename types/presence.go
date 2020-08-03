@@ -8,10 +8,10 @@ import (
 
 // StatusUpdate represents the packet sent by the client to update its status
 type StatusUpdate struct {
-	Since  int64    `json:"since"` // Unix timestamp
-	Game   Activity `json:"activity,omitempty"`
-	Status string   `json:"status"`
-	AFK    bool     `json:"afk"`
+	Since  *int64    `json:"since"` // Unix timestamp
+	Game   *Activity `json:"game"`
+	Status string    `json:"status"`
+	AFK    bool      `json:"afk"`
 }
 
 // PresenceStatus represents a presence's status
