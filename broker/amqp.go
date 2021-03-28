@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/streadway/amqp"
 )
 
 // ErrDisconnected occurs when trying to do something that requires a connection but one was
 // unavailable
 var ErrDisconnected = errors.New("disconnected from the broker")
+var ErrNoRes = errors.New("no response from server")
 
 // AMQP is a broker for AMQP clients. Probably most useful for RabbitMQ.
 type AMQP struct {
@@ -155,6 +157,48 @@ func (a *AMQP) Subscribe(event string) (err error) {
 		go a.receiveCallback(event, d.Body)
 	}
 	return
+}
+
+func (a *AMQP) Call(event string, opts amqp.Publishing) ([]byte, error) {
+	subgroup := a.Subgroup
+	if subgroup != "" {
+		subgroup += ":"
+	}
+	queueName := fmt.Sprintf("%s:%s%s", a.Group, subgroup, event)
+	q, err := a.channel.QueueDeclare(
+		queueName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	msgs, err := a.channel.Consume(q.Name, "", false, false, false, false, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	correlation := uuid.New().String()
+	opts.CorrelationId = correlation
+	opts.ReplyTo = q.Name
+
+	err = a.publish(event, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	for d := range msgs {
+		if correlation == d.CorrelationId {
+			d.Ack(false)
+			return d.Body, nil
+		}
+	}
+
+	return nil, ErrNoRes
 }
 
 // Unsubscribe will make this client cancel the subscription for specific events
