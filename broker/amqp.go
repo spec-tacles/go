@@ -67,7 +67,7 @@ func (a *AMQP) Connect(url string) error {
 
 	// setup RPC callback queue
 	rpc, err := a.channel.QueueDeclare(
-		"",
+		"rpc",
 		true,
 		false,
 		false,
@@ -79,7 +79,7 @@ func (a *AMQP) Connect(url string) error {
 	if err != nil {
 		return ErrRpcQueueAssertionFailure
 	}
-	msgs, err := a.channel.Consume("", "", false, false, false, false, nil)
+	msgs, err := a.channel.Consume("rpc", "", false, false, false, false, nil)
 	if err != nil {
 		return ErrRpcQueueAssertionFailure
 	}
@@ -190,7 +190,7 @@ func (a *AMQP) Subscribe(event string) (err error) {
 func (a *AMQP) Call(event string, opts amqp.Publishing) ([]byte, error) {
 	correlation := uuid.New().String()
 	opts.CorrelationId = correlation
-	opts.ReplyTo = ""
+	opts.ReplyTo = "rpc"
 
 	err := a.publish(event, opts)
 	if err != nil {
