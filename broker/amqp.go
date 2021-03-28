@@ -12,7 +12,12 @@ import (
 // ErrDisconnected occurs when trying to do something that requires a connection but one was
 // unavailable
 var ErrDisconnected = errors.New("disconnected from the broker")
+
+// ErrorNoRes occurs when no response is returned from the server on an RPC call
 var ErrNoRes = errors.New("no response from server")
+
+// ErrRpcQueueAssertionFailure occurrs when the anon RPC queue fails to create
+var ErrRpcQueueAssertionFailure = errors.New("failed to create anonymous rpc queue")
 
 // AMQP is a broker for AMQP clients. Probably most useful for RabbitMQ.
 type AMQP struct {
@@ -20,6 +25,8 @@ type AMQP struct {
 	channel         *amqp.Channel
 	receiveCallback EventHandler
 	consumerTags    map[string]string
+	rpcqueue        amqp.Queue
+	rpcconsumer     <-chan amqp.Delivery
 
 	Group    string
 	Subgroup string
@@ -57,6 +64,27 @@ func (a *AMQP) Connect(url string) error {
 		false,
 		nil,
 	)
+
+	// setup RPC callback queue
+	rpc, err := a.channel.QueueDeclare(
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	a.rpcqueue = rpc
+
+	if err != nil {
+		return ErrRpcQueueAssertionFailure
+	}
+	msgs, err := a.channel.Consume("", "", false, false, false, false, nil)
+	if err != nil {
+		return ErrRpcQueueAssertionFailure
+	}
+	a.rpcconsumer = msgs
+
 	return err
 }
 
@@ -160,38 +188,16 @@ func (a *AMQP) Subscribe(event string) (err error) {
 }
 
 func (a *AMQP) Call(event string, opts amqp.Publishing) ([]byte, error) {
-	subgroup := a.Subgroup
-	if subgroup != "" {
-		subgroup += ":"
-	}
-	queueName := fmt.Sprintf("%s:%s%s", a.Group, subgroup, event)
-	q, err := a.channel.QueueDeclare(
-		queueName,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	msgs, err := a.channel.Consume(q.Name, "", false, false, false, false, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	correlation := uuid.New().String()
 	opts.CorrelationId = correlation
-	opts.ReplyTo = q.Name
+	opts.ReplyTo = ""
 
-	err = a.publish(event, opts)
+	err := a.publish(event, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	for d := range msgs {
+	for d := range a.rpcconsumer {
 		if correlation == d.CorrelationId {
 			d.Ack(false)
 			return d.Body, nil
