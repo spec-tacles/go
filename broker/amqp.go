@@ -25,8 +25,8 @@ type AMQP struct {
 	channel         *amqp.Channel
 	receiveCallback EventHandler
 	consumerTags    map[string]string
-	rpcqueue        amqp.Queue
-	rpcconsumer     <-chan amqp.Delivery
+	rpcQueue        amqp.Queue
+	rpcConsumer     <-chan amqp.Delivery
 
 	Group    string
 	Subgroup string
@@ -67,23 +67,23 @@ func (a *AMQP) Connect(url string) error {
 
 	// setup RPC callback queue
 	rpc, err := a.channel.QueueDeclare(
-		"rpc",
+		"",
+		false,
 		true,
-		false,
-		false,
+		true,
 		false,
 		nil,
 	)
-	a.rpcqueue = rpc
+	a.rpcQueue = rpc
 
 	if err != nil {
 		return ErrRpcQueueAssertionFailure
 	}
-	msgs, err := a.channel.Consume("rpc", "", false, false, false, false, nil)
+	msgs, err := a.channel.Consume(rpc.Name, "", true, true, false, false, nil)
 	if err != nil {
 		return ErrRpcQueueAssertionFailure
 	}
-	a.rpcconsumer = msgs
+	a.rpcConsumer = msgs
 
 	return err
 }
@@ -190,16 +190,15 @@ func (a *AMQP) Subscribe(event string) (err error) {
 func (a *AMQP) Call(event string, opts amqp.Publishing) ([]byte, error) {
 	correlation := uuid.New().String()
 	opts.CorrelationId = correlation
-	opts.ReplyTo = "rpc"
+	opts.ReplyTo = a.rpcQueue.Name
 
 	err := a.publish(event, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	for d := range a.rpcconsumer {
+	for d := range a.rpcConsumer {
 		if correlation == d.CorrelationId {
-			d.Ack(false)
 			return d.Body, nil
 		}
 	}
