@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/streadway/amqp"
 )
 
@@ -12,12 +13,20 @@ import (
 // unavailable
 var ErrDisconnected = errors.New("disconnected from the broker")
 
+// ErrorNoRes occurs when no response is returned from the server on an RPC call
+var ErrNoRes = errors.New("no response from server")
+
+// ErrRpcQueueAssertionFailure occurrs when the anon RPC queue fails to create
+var ErrRpcQueueAssertionFailure = errors.New("failed to create anonymous rpc queue")
+
 // AMQP is a broker for AMQP clients. Probably most useful for RabbitMQ.
 type AMQP struct {
 	conn            *amqp.Connection
 	channel         *amqp.Channel
 	receiveCallback EventHandler
 	consumerTags    map[string]string
+	rpcQueue        amqp.Queue
+	rpcConsumer     <-chan amqp.Delivery
 
 	Group    string
 	Subgroup string
@@ -55,6 +64,30 @@ func (a *AMQP) Connect(url string) error {
 		false,
 		nil,
 	)
+	if err != nil {
+		return err
+	}
+
+	// setup RPC callback queue
+	rpc, err := a.channel.QueueDeclare(
+		"",
+		false,
+		true,
+		true,
+		false,
+		nil,
+	)
+	a.rpcQueue = rpc
+
+	if err != nil {
+		return ErrRpcQueueAssertionFailure
+	}
+	msgs, err := a.channel.Consume(rpc.Name, "", true, true, false, false, nil)
+	if err != nil {
+		return ErrRpcQueueAssertionFailure
+	}
+	a.rpcConsumer = msgs
+
 	return err
 }
 
@@ -155,6 +188,25 @@ func (a *AMQP) Subscribe(event string) (err error) {
 		go a.receiveCallback(event, d.Body)
 	}
 	return
+}
+
+func (a *AMQP) Call(event string, opts amqp.Publishing) ([]byte, error) {
+	correlation := uuid.New().String()
+	opts.CorrelationId = correlation
+	opts.ReplyTo = a.rpcQueue.Name
+
+	err := a.publish(event, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	for d := range a.rpcConsumer {
+		if correlation == d.CorrelationId {
+			return d.Body, nil
+		}
+	}
+
+	return nil, ErrNoRes
 }
 
 // Unsubscribe will make this client cancel the subscription for specific events
