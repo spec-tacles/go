@@ -15,21 +15,21 @@ const (
 	// The request succeeded
 	Success ResponseStatus = iota
 	// An unknown error occurred
-	UnknownError ResponseStatus = iota
+	UnknownError
 	// Invalid request format (non-JSON)
-	InvalidRequestFormat ResponseStatus = iota
+	InvalidRequestFormat
 	// Invalid URL path
-	InvalidPath ResponseStatus = iota
+	InvalidPath
 	// Invalid URL query
-	InvalidQuery ResponseStatus = iota
+	InvalidQuery
 	// Invalid HTTP method
-	InvalidMethod ResponseStatus = iota
+	InvalidMethod
 	// Invalid headers
-	InvalidHeaders ResponseStatus = iota
+	InvalidHeaders
 	// The request failed
-	RequestFailure ResponseStatus = iota
+	RequestFailure
 	// The request timed out
-	RequestTimeout ResponseStatus = iota
+	RequestTimeout
 )
 
 // A response from the proxy.
