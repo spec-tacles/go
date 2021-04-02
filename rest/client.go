@@ -20,14 +20,14 @@ type Client struct {
 }
 
 // NewClient makes a new client
-func NewClient(token string) *Client {
+func NewClient(token string, apiVersion string) *Client {
 	return &Client{
 		Token:       token,
 		HTTP:        http.DefaultClient,
 		Buckets:     &sync.Map{},
 		GlobalReset: time.Time{},
-		APIVersion:  "6",
-		URLHost:     "discordapp.com",
+		APIVersion:  apiVersion,
+		URLHost:     "discord.com",
 		URLScheme:   "https",
 	}
 }
