@@ -1,3 +1,4 @@
+// a client for interacting with the proxy - https://github.com/spec-tacles/proxy
 package proxy
 
 import (
