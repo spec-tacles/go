@@ -9,11 +9,16 @@ import (
 )
 
 type Proxy struct {
-	Broker    *broker.AMQP
+	// The AMQP broker used to perform RPC calls to the proxy
+	Broker *broker.AMQP
+	// The event to call the requests on, usually `REQUEST`
 	RestEvent string
-	Token     string
+	// The Discord bot token to perform requests with
+	// To perform Bearer requests, you'll have to specify the header yourself on each DoJSON or Do function
+	Token string
 }
 
+// generic, private request function
 func (p *Proxy) do(method string, path string, body *[]byte, options RequestOptions) (*Response, error) {
 	// if they specify Bearer, dont overwrite
 	if (options.Headers)["Authorization"] == "" {
@@ -39,6 +44,7 @@ func (p *Proxy) do(method string, path string, body *[]byte, options RequestOpti
 	return &res, nil
 }
 
+// Performs a request to the proxy, specifying the Content-Type header to application/json
 func (p *Proxy) DoJSON(method string, path string, body *[]byte, options *RequestOptions) (*Response, error) {
 	if options == nil {
 		options = newRequestOptions()
@@ -49,6 +55,7 @@ func (p *Proxy) DoJSON(method string, path string, body *[]byte, options *Reques
 	return p.do(method, path, body, *options)
 }
 
+// Performs a generic request to the proxy, not specifying a Content-Type header
 func (p *Proxy) Do(method string, path string, body *[]byte, options *RequestOptions) (*Response, error) {
 	if options == nil {
 		options = newRequestOptions()

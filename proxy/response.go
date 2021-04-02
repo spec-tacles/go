@@ -33,9 +33,11 @@ const (
 )
 
 // A response from the proxy.
-// If the Status is 0 (Success), the Body will be a ResponseBody.
-// Else, the Body will be of type string, elaborating on the error.
 type Response struct {
+	// The status of the response
 	Status ResponseStatus `msgpack:"status"`
-	Body   interface{}    `msgpack:"body"`
+	// The body of the response.
+	// If the Status is 0 (Success), the Body will be a ResponseBody.
+	// Else, the Body will be of type string, elaborating on the error.
+	Body interface{} `msgpack:"body"`
 }
