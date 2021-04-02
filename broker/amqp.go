@@ -64,6 +64,9 @@ func (a *AMQP) Connect(url string) error {
 		false,
 		nil,
 	)
+	if err != nil {
+		return ErrRpcQueueAssertionFailure
+	}
 
 	// setup RPC callback queue
 	rpc, err := a.channel.QueueDeclare(
