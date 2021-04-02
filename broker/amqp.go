@@ -65,7 +65,7 @@ func (a *AMQP) Connect(url string) error {
 		nil,
 	)
 	if err != nil {
-		return ErrRpcQueueAssertionFailure
+		return err
 	}
 
 	// setup RPC callback queue
