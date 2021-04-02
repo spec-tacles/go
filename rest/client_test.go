@@ -26,7 +26,7 @@ func TestDo(t *testing.T) {
 		return
 	}
 
-	client := rest.NewClient(os.Getenv("DISCORD_TOKEN"))
+	client := rest.NewClient(os.Getenv("DISCORD_TOKEN"), "8")
 	res, err := client.Do(req)
 	if err != nil {
 		t.Error(err)
@@ -41,7 +41,7 @@ func TestDo(t *testing.T) {
 
 func TestGateway(t *testing.T) {
 	var info types.GatewayBot
-	client := rest.NewClient(os.Getenv("DISCORD_TOKEN"))
+	client := rest.NewClient(os.Getenv("DISCORD_TOKEN"), "8")
 	err := client.DoJSON(http.MethodGet, "/gateway/bot", nil, &info)
 	if err != nil {
 		t.Error(err)

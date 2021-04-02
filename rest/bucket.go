@@ -95,8 +95,8 @@ func (b *Bucket) handleNormal(res *http.Response) (err error) {
 		return nil
 	}
 
-	var resetTime int64
-	resetTime, err = strconv.ParseInt(reset, 10, 64)
+	var resetTime float64
+	resetTime, err = strconv.ParseFloat(reset, 64)
 	if err != nil {
 		return
 	}
@@ -107,8 +107,8 @@ func (b *Bucket) handleNormal(res *http.Response) (err error) {
 	}
 
 	// calculate clock difference when determining reset time based on header timestamp
-	diff := time.Now().Sub(sent)
-	b.Reset = time.Unix(resetTime, 0).Add(diff)
+	diff := time.Since(sent)
+	b.Reset = time.Unix(int64(resetTime), 0).Add(diff)
 	return nil
 }
 
