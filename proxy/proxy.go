@@ -14,17 +14,10 @@ type Proxy struct {
 	Token     string
 }
 
-func (p *Proxy) Make(method string, path string, body *interface{}, options RequestOptions) (*Response, error) {
-	if options.Headers == nil {
-		options.Headers = make(map[string]string)
-	}
+func (p *Proxy) do(method string, path string, body *[]byte, options RequestOptions) (*Response, error) {
 	// if they specify Bearer, dont overwrite
 	if (options.Headers)["Authorization"] == "" {
 		(options.Headers)["Authorization"] = fmt.Sprintf("Bot %s", p.Token)
-	}
-
-	if body != nil {
-		(options.Headers)["Content-Type"] = "application/json"
 	}
 
 	data, err := msgpack.Marshal(Request{Method: method, Path: path, Body: body, Headers: options.Headers, Query: options.Query})
@@ -44,4 +37,22 @@ func (p *Proxy) Make(method string, path string, body *interface{}, options Requ
 	}
 
 	return &res, nil
+}
+
+func (p *Proxy) DoJSON(method string, path string, body *[]byte, options *RequestOptions) (*Response, error) {
+	if options == nil {
+		options = newRequestOptions()
+	}
+
+	(options.Headers)["Content-Type"] = "application/json"
+
+	return p.do(method, path, body, *options)
+}
+
+func (p *Proxy) Do(method string, path string, body *[]byte, options *RequestOptions) (*Response, error) {
+	if options == nil {
+		options = newRequestOptions()
+	}
+
+	return p.do(method, path, body, *options)
 }

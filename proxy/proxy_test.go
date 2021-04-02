@@ -1,6 +1,10 @@
+// go test proxy/proxy_test.go proxy/proxy.go proxy/response.go proxy/request.go
 package proxy
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/spec-tacles/go/broker"
@@ -8,6 +12,11 @@ import (
 )
 
 var b = broker.NewAMQP("rest", "", nil)
+var channel = os.Getenv("CHANNEL_ID")
+
+type PostMessageBody struct {
+	Content string `json:"content"`
+}
 
 func TestProxy(t *testing.T) {
 	err := b.Connect("amqp://admin:appellsmells@localhost//")
@@ -22,10 +31,23 @@ func TestProxy(t *testing.T) {
 	}
 
 	t.Logf("here")
-	res, err := prxy.Make("GET", "/users/@me", nil, RequestOptions{})
+	res, err := prxy.DoJSON("GET", "/users/@me", nil, nil)
 	t.Logf("res: %v", res)
 	assert.NoError(t, err)
 	assert.EqualValues(t, res.Status, 0)
+
+	body, _ := json.Marshal(PostMessageBody{Content: "foo bar"})
+
+	res, err = prxy.DoJSON("POST", fmt.Sprintf("/channels/%s/messages", channel), &body, nil)
+	assert.NoError(t, err)
+	assert.EqualValues(t, res.Status, 0)
+
+	switch v := res.Body.(type) {
+	case ResponseBody:
+		assert.EqualValues(t, v.Status, 200)
+	}
+
+	b.Close()
 }
 
 // a compose file for your convenience
