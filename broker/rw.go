@@ -1,7 +1,9 @@
 package broker
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"sync"
@@ -17,10 +19,24 @@ type RWBroker struct {
 	eventsMux sync.RWMutex
 }
 
+var ErrCannotReply = errors.New("cannot reply")
+
 // IOPacket represents a JSON packet transmitted through an RW broker
 type IOPacket struct {
 	Event string          `json:"event"`
 	Data  json.RawMessage `json:"data"`
+}
+
+func (p *IOPacket) Body() []byte {
+	return p.Data
+}
+
+func (p *IOPacket) Reply(ctx context.Context, data []byte) error {
+	return ErrCannotReply
+}
+
+func (p *IOPacket) Ack(context.Context) error {
+	return nil
 }
 
 // NewRW creates a new Read/Write broker
@@ -53,7 +69,7 @@ func NewRW(r io.Reader, w io.Writer, callback EventHandler) *RWBroker {
 			defer b.eventsMux.RUnlock()
 
 			if _, ok := b.events[pk.Event]; ok {
-				go b.callback(pk.Event, pk.Data)
+				go b.callback(pk.Event, pk)
 			}
 		}
 	}()

@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -18,6 +19,23 @@ var ErrNoRes = errors.New("no response from server")
 
 // ErrRpcQueueAssertionFailure occurrs when the anon RPC queue fails to create
 var ErrRpcQueueAssertionFailure = errors.New("failed to create anonymous rpc queue")
+
+type AMQPMessage struct {
+	amqp *AMQP
+	d    amqp.Delivery
+}
+
+func (m *AMQPMessage) Body() []byte {
+	return m.d.Body
+}
+
+func (m *AMQPMessage) Reply(ctx context.Context, data []byte) error {
+	return m.amqp.Publish(m.d.ReplyTo, data)
+}
+
+func (m *AMQPMessage) Ack(ctx context.Context) error {
+	return m.amqp.channel.Ack(m.d.DeliveryTag, false)
+}
 
 // AMQP is a broker for AMQP clients. Probably most useful for RabbitMQ.
 type AMQP struct {
@@ -177,7 +195,7 @@ func (a *AMQP) Subscribe(event string) (err error) {
 	if err != nil {
 		return
 	}
-	go a.receiveCallback(event, firstMessage.Body)
+	go a.receiveCallback(event, &AMQPMessage{a, firstMessage})
 
 	for d := range msgs {
 		err = d.Ack(false)
@@ -185,7 +203,7 @@ func (a *AMQP) Subscribe(event string) (err error) {
 			return
 		}
 
-		go a.receiveCallback(event, d.Body)
+		go a.receiveCallback(event, &AMQPMessage{a, d})
 	}
 	return
 }

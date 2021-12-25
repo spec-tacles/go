@@ -14,6 +14,10 @@ func (r *testReadWriter) Write(d []byte) (int, error) {
 }
 
 var rcv = make(chan *IOPacket)
-var cb = func(event string, data []byte) {
-	rcv <- &IOPacket{event, data}
+var cb = func(event string, pkt Message) {
+	var newPkt = IOPacket{
+		Event: event,
+		Data:  pkt.Body(),
+	}
+	rcv <- &newPkt
 }
