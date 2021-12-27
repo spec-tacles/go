@@ -6,29 +6,28 @@ import (
 	"errors"
 	"io"
 	"log"
-	"sync"
 )
 
 // RWBroker is a broker that uses a Go Reader and Writer
 type RWBroker struct {
 	R io.Reader
 	W io.Writer
-
-	callback  EventHandler
-	events    map[string]struct{}
-	eventsMux sync.RWMutex
 }
 
 var ErrCannotReply = errors.New("cannot reply")
 
 // IOPacket represents a JSON packet transmitted through an RW broker
 type IOPacket struct {
-	Event string          `json:"event"`
-	Data  json.RawMessage `json:"data"`
+	E string `json:"event"`
+	D []byte `json:"data"`
+}
+
+func (p *IOPacket) Event() string {
+	return p.E
 }
 
 func (p *IOPacket) Body() []byte {
-	return p.Data
+	return p.D
 }
 
 func (p *IOPacket) Reply(ctx context.Context, data []byte) error {
@@ -40,39 +39,11 @@ func (p *IOPacket) Ack(context.Context) error {
 }
 
 // NewRW creates a new Read/Write broker
-func NewRW(r io.Reader, w io.Writer, callback EventHandler) *RWBroker {
+func NewRW(r io.Reader, w io.Writer) *RWBroker {
 	b := &RWBroker{
 		R: r,
 		W: w,
-
-		callback:  callback,
-		events:    make(map[string]struct{}),
-		eventsMux: sync.RWMutex{},
 	}
-
-	go func() {
-		decoder := json.NewDecoder(r)
-		pk := &IOPacket{}
-		for {
-			if err := decoder.Decode(pk); err != nil {
-				if err != io.EOF {
-					log.Printf("error decoding JSON: %s", err)
-				}
-				break
-			}
-
-			if b.callback == nil {
-				continue
-			}
-
-			b.eventsMux.RLock()
-			defer b.eventsMux.RUnlock()
-
-			if _, ok := b.events[pk.Event]; ok {
-				go b.callback(pk.Event, pk)
-			}
-		}
-	}()
 
 	return b
 }
@@ -83,12 +54,12 @@ func (b *RWBroker) Close() error {
 }
 
 // Connect implements Broker interface
-func (b *RWBroker) Connect(url string) error {
+func (b *RWBroker) Connect(ctx context.Context, url string) error {
 	return nil
 }
 
 // Publish writes data to the writer
-func (b *RWBroker) Publish(event string, data []byte) (err error) {
+func (b *RWBroker) Publish(ctx context.Context, event string, data []byte) (err error) {
 	pk, err := json.Marshal(&IOPacket{event, data})
 	if err != nil {
 		return
@@ -98,32 +69,24 @@ func (b *RWBroker) Publish(event string, data []byte) (err error) {
 	return
 }
 
-// PublishOptions calls Publish with the event and data specified in the options
-func (b *RWBroker) PublishOptions(opts PublishOptions) error {
-	return b.Publish(opts.Event, opts.Data)
-}
-
 // Subscribe implements Broker interface
-func (b *RWBroker) Subscribe(event string) error {
-	b.eventsMux.Lock()
-	defer b.eventsMux.Unlock()
+func (b *RWBroker) Subscribe(ctx context.Context, event string, messages chan Message) error {
+	decoder := json.NewDecoder(b.R)
+	pk := &IOPacket{}
+	for {
+		if err := decoder.Decode(pk); err != nil {
+			if err != io.EOF {
+				log.Printf("error decoding JSON: %s", err)
+			}
+			break
+		}
 
-	b.events[event] = struct{}{}
+		if pk.E == event {
+			messages <- pk
+		}
+	}
+
 	return nil
-}
-
-// Unsubscribe implements Broker interface
-func (b *RWBroker) Unsubscribe(event string) error {
-	b.eventsMux.Lock()
-	defer b.eventsMux.Unlock()
-
-	delete(b.events, event)
-	return nil
-}
-
-// SetCallback implements Broker interface
-func (b *RWBroker) SetCallback(handler EventHandler) {
-	b.callback = handler
 }
 
 // NotifyClose implements Broker interface

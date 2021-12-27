@@ -1,21 +1,24 @@
-package broker
+package amqp
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/spec-tacles/go/broker"
 	"github.com/stretchr/testify/assert"
 )
 
 var connected = false
-var a = NewAMQP("test", "", cb)
+var a = AMQP{Group: "test"}
 
 func connect() {
 	if connected {
 		return
 	}
 
-	err := a.Connect("amqp://localhost:5672")
+	ctx := context.Background()
+	err := a.Connect(ctx, "amqp://localhost:5672")
 	if err != nil {
 		panic(err)
 	}
@@ -25,60 +28,56 @@ func connect() {
 func TestSubscribe(t *testing.T) {
 	connect()
 
+	ctx := context.Background()
+
 	go func() {
-		err := a.Subscribe("foo")
+		err := a.Subscribe(ctx, []string{"foo"}, broker.Rcv)
 		assert.NoError(t, err)
 	}()
 
 	event := "foo"
 	data := []byte("bar")
-	err := a.Publish(event, data)
+	err := a.Publish(ctx, event, data)
 	assert.NoError(t, err)
 
-	res := <-rcv
+	res := <-broker.Rcv
 	assert.Equal(t, event, res.Event)
-	assert.EqualValues(t, data, res.Data)
+	assert.EqualValues(t, data, res.Body())
 
-	err = a.Publish(event, data)
+	err = a.Publish(ctx, event, data)
 	assert.NoError(t, err)
 
-	res = <-rcv
+	res = <-broker.Rcv
 	assert.Equal(t, event, res.Event)
-	assert.EqualValues(t, data, res.Data)
+	assert.EqualValues(t, data, res.Body())
 
-	err = a.Unsubscribe(event)
-	assert.NoError(t, err)
-
-	err = a.Publish(event, data)
+	err = a.Publish(ctx, event, data)
 	assert.NoError(t, err)
 
 	select {
-	case d := <-rcv:
+	case d := <-broker.Rcv:
 		assert.FailNow(t, "unexpected response from AMQP", d)
 	case <-time.After(5 * time.Second):
 	}
 
 	go func() {
-		err := a.Subscribe("foo")
+		err := a.Subscribe(ctx, []string{"foo"}, broker.Rcv)
 		assert.NoError(t, err)
 	}()
 
-	res = <-rcv
+	res = <-broker.Rcv
 	assert.Equal(t, event, res.Event)
-	assert.EqualValues(t, data, res.Data)
+	assert.EqualValues(t, data, res.Body())
 }
 
 func TestClose(t *testing.T) {
 	connect()
 
-	closes := make(chan error)
-	err := a.NotifyClose(closes)
+	ctx := context.Background()
+
+	err := a.Close()
 	assert.NoError(t, err)
 
-	err = a.Close()
-	assert.NoError(t, err)
-	assert.NoError(t, <-closes)
-
-	err = a.Publish("foo", []byte("bar"))
+	err = a.Publish(ctx, "foo", []byte("bar"))
 	assert.Error(t, err)
 }

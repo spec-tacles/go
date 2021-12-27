@@ -1,43 +1,60 @@
 package broker
 
 import (
+	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
+type testReadWriter struct {
+	C chan []byte
+}
+
+func (r *testReadWriter) Read(d []byte) (int, error) {
+	return copy(d, <-r.C), nil
+}
+
+func (r *testReadWriter) Write(d []byte) (int, error) {
+	r.C <- d
+	return len(d), nil
+}
+
 func TestRWSubscribe(t *testing.T) {
+	ctx := context.Background()
 	var rw = &testReadWriter{
 		C: make(chan []byte),
 	}
-	var b = NewRW(rw, rw, cb)
+	var b = NewRW(rw, rw)
 
-	err := b.Subscribe("foo")
+	err := b.Subscribe(ctx, "foo", Rcv)
 	assert.NoError(t, err)
 
 	d := json.RawMessage(`{"event":"foo","data":["bar"]}`)
 	assert.NoError(t, err)
 	go rw.Write(d)
 
-	res := <-rcv
+	res := <-Rcv
 	assert.Equal(t, "foo", res.Event)
-	assert.EqualValues(t, []byte("[\"bar\"]"), res.Data)
+	assert.EqualValues(t, []byte("[\"bar\"]"), res.Body())
 }
 
 func TestRWPublish(t *testing.T) {
+	ctx := context.Background()
 	var rw = &testReadWriter{
 		C: make(chan []byte),
 	}
-	var b = NewRW(rw, rw, cb)
+	var b = NewRW(rw, rw)
 
 	go func() {
-		err := b.Publish("foo", []byte("[\"bar\"]"))
+		err := b.Publish(ctx, "foo", []byte("[\"bar\"]"))
 		assert.NoError(t, err)
 	}()
 
 	expected, err := json.Marshal(&IOPacket{
-		Event: "foo",
-		Data:  []byte("[\"bar\"]"),
+		E: "foo",
+		D: []byte("[\"bar\"]"),
 	})
 	assert.NoError(t, err)
 
