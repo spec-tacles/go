@@ -23,5 +23,4 @@ type Broker interface {
 	Connect(ctx context.Context, url string) error
 	Publish(ctx context.Context, event string, data []byte) error
 	Subscribe(ctx context.Context, events []string, messages chan<- Message) error
-	NotifyClose(chan error) error
 }

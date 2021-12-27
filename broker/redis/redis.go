@@ -47,6 +47,7 @@ func (m *RedisMessage) Ack(ctx context.Context) error {
 type Redis struct {
 	pool radix.Client
 
+	Config        radix.PoolConfig
 	Group         string
 	Subgroup      string
 	Name          string
@@ -78,8 +79,8 @@ func NewRedis(group string, subgroup string) *Redis {
 }
 
 // Connect connects the broker to Redis
-func (r *Redis) Connect(ctx context.Context, config radix.PoolConfig, url string) error {
-	pool, err := config.New(ctx, "tcp", url)
+func (r *Redis) Connect(ctx context.Context, url string) error {
+	pool, err := r.Config.New(ctx, "tcp", url)
 	if err != nil {
 		return err
 	}

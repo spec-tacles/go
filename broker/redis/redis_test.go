@@ -29,7 +29,7 @@ func connect() {
 		panic(err)
 	}
 
-	err = r.Connect(ctx, radix.PoolConfig{}, "localhost:6379")
+	err = r.Connect(ctx, "localhost:6379")
 	if err != nil {
 		panic(err)
 	}
@@ -95,7 +95,7 @@ func TestAutoclaim(t *testing.T) {
 	otherCtx, otherCancel := context.WithCancel(ctx)
 
 	otherRedis := NewRedis("test", "")
-	err := otherRedis.Connect(otherCtx, radix.PoolConfig{}, "localhost:6379")
+	err := otherRedis.Connect(otherCtx, "localhost:6379")
 	assert.NoError(t, err)
 
 	go func() {

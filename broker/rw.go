@@ -70,7 +70,12 @@ func (b *RWBroker) Publish(ctx context.Context, event string, data []byte) (err 
 }
 
 // Subscribe implements Broker interface
-func (b *RWBroker) Subscribe(ctx context.Context, event string, messages chan Message) error {
+func (b *RWBroker) Subscribe(ctx context.Context, events []string, messages chan<- Message) error {
+	eMap := make(map[string]struct{}, len(events))
+	for _, event := range events {
+		eMap[event] = struct{}{}
+	}
+
 	decoder := json.NewDecoder(b.R)
 	pk := &IOPacket{}
 	for {
@@ -81,15 +86,10 @@ func (b *RWBroker) Subscribe(ctx context.Context, event string, messages chan Me
 			break
 		}
 
-		if pk.E == event {
+		if _, ok := eMap[pk.E]; ok {
 			messages <- pk
 		}
 	}
 
-	return nil
-}
-
-// NotifyClose implements Broker interface
-func (b *RWBroker) NotifyClose(chan error) error {
 	return nil
 }

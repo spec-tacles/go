@@ -28,7 +28,7 @@ func TestRWSubscribe(t *testing.T) {
 	}
 	var b = NewRW(rw, rw)
 
-	err := b.Subscribe(ctx, "foo", Rcv)
+	err := b.Subscribe(ctx, []string{"foo"}, Rcv)
 	assert.NoError(t, err)
 
 	d := json.RawMessage(`{"event":"foo","data":["bar"]}`)
