@@ -61,6 +61,8 @@ const (
 	IntentDirectMessages
 	IntentDirectMessageReactions
 	IntentDirectMessageTyping
+	_
+	IntentGuildScheduledEvents
 )
 
 // GatewayEvent represents a gateway packet's event name
@@ -87,6 +89,9 @@ const (
 	CloseSessionTimeout
 	CloseInvalidShard
 	CloseShardingRequired
+	CloseInvalidAPIVersion
+	CloseInvalidIntents
+	CloseDisallowedIntents
 )
 
 // SendPacket represents a JSON packet sent over the Discord gateway
@@ -108,14 +113,13 @@ type ReceivePacket struct {
 
 // Identify represents an identify packet
 type Identify struct {
-	Token              string              `json:"token"`
-	Properties         *IdentifyProperties `json:"properties"`
-	Compress           bool                `json:"compress,omitempty"`
-	LargeThreshold     int                 `json:"large_threshold,omitempty"`
-	Shard              []int               `json:"shard,omitempty"`
-	Presence           *StatusUpdate       `json:"presence,omitempty"`
-	GuildSubscriptions bool                `json:"guild_subscriptions,omitempty"`
-	Intents            int                 `json:"intents,omitempty"`
+	Token          string              `json:"token"`
+	Properties     *IdentifyProperties `json:"properties"`
+	Compress       bool                `json:"compress,omitempty"`
+	LargeThreshold int                 `json:"large_threshold,omitempty"`
+	Shard          []int               `json:"shard,omitempty"`
+	Presence       *StatusUpdate       `json:"presence,omitempty"`
+	Intents        int                 `json:"intents,omitempty"`
 }
 
 // IdentifyProperties represents properties sent in an identify packet
