@@ -47,7 +47,7 @@ func TestSubscribe(t *testing.T) {
 	}()
 
 	event := "foo"
-	data := []byte("bar")
+	data := "bar"
 	err := r.Publish(ctx, event, data)
 	assert.NoError(t, err)
 
@@ -103,11 +103,11 @@ func TestAutoclaim(t *testing.T) {
 		assert.ErrorIs(t, err, context.Canceled)
 	}()
 
-	err = r.Publish(ctx, "foo", []byte("bar"))
+	err = r.Publish(ctx, "foo", "bar")
 	assert.NoError(t, err)
 
 	msg := <-broker.Rcv
-	assert.EqualValues(t, msg.Body(), []byte("bar"))
+	assert.Equal(t, "bar", msg.Body())
 
 	otherCancel()
 
@@ -118,5 +118,5 @@ func TestAutoclaim(t *testing.T) {
 
 	msg = <-broker.Rcv
 	assert.NoError(t, msg.Ack(ctx))
-	assert.EqualValues(t, msg.Body(), []byte("bar"))
+	assert.Equal(t, "bar", msg.Body())
 }

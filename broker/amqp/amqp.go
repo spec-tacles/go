@@ -29,11 +29,12 @@ func (m *AMQPMessage) Event() string {
 	return m.event
 }
 
-func (m *AMQPMessage) Body() []byte {
-	return m.d.Body
+func (m *AMQPMessage) Body() (data interface{}) {
+	_ = broker.Decode(m.d.Body, &data)
+	return
 }
 
-func (m *AMQPMessage) Reply(ctx context.Context, data []byte) error {
+func (m *AMQPMessage) Reply(ctx context.Context, data interface{}) error {
 	return m.amqp.Publish(ctx, m.d.ReplyTo, data)
 }
 
@@ -119,9 +120,14 @@ func (a *AMQP) Close() (err error) {
 }
 
 // Publish sends data to AMQP
-func (a *AMQP) Publish(ctx context.Context, event string, data []byte) error {
+func (a *AMQP) Publish(ctx context.Context, event string, data interface{}) error {
+	b, err := broker.Encode(data)
+	if err != nil {
+		return err
+	}
+
 	return a.publish(event, amqp091.Publishing{
-		Body:       data,
+		Body:       b,
 		Expiration: strconv.FormatInt(a.Timeout.Milliseconds(), 10),
 	})
 }

@@ -17,11 +17,10 @@ const streamDataKey = "data"
 
 // RedisMessage represents a message received from the Redis broker
 type RedisMessage struct {
+	r     *Redis
 	id    radix.StreamEntryID
 	event string
-	group string
-	pool  radix.Client
-	body  []byte
+	body  string
 }
 
 func (m *RedisMessage) Event() string {
@@ -29,18 +28,24 @@ func (m *RedisMessage) Event() string {
 }
 
 // Body returns the body of the message
-func (m *RedisMessage) Body() []byte {
-	return m.body
+func (m *RedisMessage) Body() (data interface{}) {
+	_ = broker.Decode([]byte(m.body), &data)
+	return
 }
 
 // Reply sends a RPC response back to the original client
-func (m *RedisMessage) Reply(ctx context.Context, data []byte) error {
-	return m.pool.Do(ctx, radix.Cmd(nil, "PUBLISH", m.id.String(), string(data)))
+func (m *RedisMessage) Reply(ctx context.Context, data interface{}) error {
+	b, err := broker.Encode(data)
+	if err != nil {
+		return err
+	}
+
+	return m.r.pool.Do(ctx, radix.Cmd(nil, "PUBLISH", m.id.String(), string(b)))
 }
 
 // Ack acknowledges receipt of the message
 func (m *RedisMessage) Ack(ctx context.Context) error {
-	return m.pool.Do(ctx, radix.Cmd(nil, "XACK", m.event, m.group, m.id.String()))
+	return m.r.pool.Do(ctx, radix.Cmd(nil, "XACK", m.event, m.r.Group, m.id.String()))
 }
 
 // Redis is a broker that uses Redis streams
@@ -72,7 +77,7 @@ func NewRedis(group string, subgroup string) *Redis {
 		Subgroup:       subgroup,
 		Name:           strconv.FormatInt(rand.Int63(), 16),
 		MaxChunk:       10,
-		BlockInterval:  3000 * time.Millisecond,
+		BlockInterval:  3 * time.Second,
 		UnackTimeout:   15 * time.Second,
 		PendingTimeout: 1 * time.Hour,
 	}
@@ -99,9 +104,14 @@ func (r *Redis) Close() (err error) {
 }
 
 // Publish publishes a message to the broker
-func (r *Redis) Publish(ctx context.Context, event string, data []byte) error {
+func (r *Redis) Publish(ctx context.Context, event string, data interface{}) error {
 	if r.pool == nil {
 		return broker.ErrDisconnected
+	}
+
+	b, err := broker.Encode(data)
+	if err != nil {
+		return err
 	}
 
 	var action radix.Action
@@ -112,14 +122,14 @@ func (r *Redis) Publish(ctx context.Context, event string, data []byte) error {
 			"XADD", event,
 			"MINID", "~", minTime,
 			"*",
-			streamDataKey, string(data),
+			streamDataKey, string(b),
 		)
 	} else {
 		action = radix.Cmd(
 			nil,
 			"XADD", event,
 			"*",
-			streamDataKey, string(data),
+			streamDataKey, string(b),
 		)
 	}
 
@@ -232,10 +242,9 @@ func (r *Redis) handleData(data *[]radix.StreamEntry, event string, msgs chan<- 
 			}
 
 			msgs <- &RedisMessage{
+				r:     r,
 				event: event,
-				body:  []byte(v),
-				group: r.Group,
-				pool:  r.pool,
+				body:  v,
 				id:    entry.ID,
 			}
 		}

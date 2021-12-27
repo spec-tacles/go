@@ -7,6 +7,7 @@ require (
 	github.com/mediocregopher/radix/v4 v4.0.0
 	github.com/rabbitmq/amqp091-go v1.2.0
 	github.com/stretchr/testify v1.7.0
+	github.com/ugorji/go/codec v1.2.6
 )
 
 go 1.13

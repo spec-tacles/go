@@ -12,8 +12,8 @@ var ErrDisconnected = errors.New("disconnected from the broker")
 
 type Message interface {
 	Event() string
-	Body() []byte
-	Reply(ctx context.Context, data []byte) error
+	Body() interface{}
+	Reply(ctx context.Context, data interface{}) error
 	Ack(ctx context.Context) error
 }
 
@@ -21,6 +21,6 @@ type Message interface {
 type Broker interface {
 	io.Closer
 	Connect(ctx context.Context, url string) error
-	Publish(ctx context.Context, event string, data []byte) error
+	Publish(ctx context.Context, event string, data interface{}) error
 	Subscribe(ctx context.Context, events []string, messages chan<- Message) error
 }
