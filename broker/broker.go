@@ -3,7 +3,6 @@ package broker
 import (
 	"context"
 	"errors"
-	"io"
 )
 
 // ErrDisconnected occurs when trying to do something that requires a connection but one was
@@ -19,8 +18,6 @@ type Message interface {
 
 // Broker is an interface describing message brokers
 type Broker interface {
-	io.Closer
-	Connect(ctx context.Context, url string) error
 	Publish(ctx context.Context, event string, data interface{}) error
 	Subscribe(ctx context.Context, events []string, messages chan<- Message) error
 }

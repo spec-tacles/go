@@ -15,9 +15,6 @@ import (
 // ErrorNoRes occurs when no response is returned from the server on an RPC call
 var ErrNoRes = errors.New("no response from server")
 
-// ErrRpcQueueAssertionFailure occurrs when the anon RPC queue fails to create
-var ErrRpcQueueAssertionFailure = errors.New("failed to create anonymous rpc queue")
-
 type AMQPMessage struct {
 	amqp    *AMQP
 	event   string
@@ -54,12 +51,9 @@ type AMQP struct {
 	Timeout  time.Duration
 }
 
-// Connect will connect this client to the AQMP Server
-func (a *AMQP) Connect(ctx context.Context, url string) error {
-	conn, err := amqp091.Dial(url)
-	if err != nil {
-		return err
-	}
+// Init will initialize this broker with the given connection. Call this whenever there is a new
+// connection.
+func (a *AMQP) Init(conn *amqp091.Connection) error {
 	a.conn = conn
 
 	ch, err := conn.Channel()
@@ -99,24 +93,18 @@ func (a *AMQP) setupRPC() error {
 		false,
 		nil,
 	)
+	if err != nil {
+		return err
+	}
 	a.rpcQueue = rpc
 
-	if err != nil {
-		return ErrRpcQueueAssertionFailure
-	}
 	msgs, err := ch.Consume(rpc.Name, "", true, true, false, false, nil)
 	if err != nil {
-		return ErrRpcQueueAssertionFailure
+		return err
 	}
 	a.rpcConsumer = msgs
 
 	return nil
-}
-
-// Close implements io.Closer and Closes the Channel & Connection of this Client
-func (a *AMQP) Close() (err error) {
-	err = a.conn.Close()
-	return
 }
 
 // Publish sends data to AMQP

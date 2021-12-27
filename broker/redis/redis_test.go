@@ -11,7 +11,7 @@ import (
 )
 
 var connected = false
-var r = NewRedis("test", "")
+var r *Redis
 
 func connect() {
 	if connected {
@@ -20,19 +20,16 @@ func connect() {
 
 	ctx := context.Background()
 
-	conn, err := radix.PoolConfig{}.New(ctx, "tcp", "localhost:6379")
+	client, err := radix.PoolConfig{}.New(ctx, "tcp", "localhost:6379")
 	if err != nil {
 		panic(err)
 	}
 
-	if err = conn.Do(ctx, radix.Cmd(nil, "FLUSHDB")); err != nil {
+	if err = client.Do(ctx, radix.Cmd(nil, "FLUSHDB")); err != nil {
 		panic(err)
 	}
 
-	err = r.Connect(ctx, "localhost:6379")
-	if err != nil {
-		panic(err)
-	}
+	r = NewRedis(client, "test")
 	connected = true
 }
 
@@ -94,9 +91,10 @@ func TestAutoclaim(t *testing.T) {
 	ctx := context.Background()
 	otherCtx, otherCancel := context.WithCancel(ctx)
 
-	otherRedis := NewRedis("test", "")
-	err := otherRedis.Connect(otherCtx, "localhost:6379")
+	client, err := radix.PoolConfig{}.New(ctx, "tcp", "localhost:6379")
 	assert.NoError(t, err)
+
+	otherRedis := NewRedis(client, "test")
 
 	go func() {
 		err := otherRedis.Subscribe(otherCtx, []string{"foo"}, broker.Rcv)
@@ -107,7 +105,7 @@ func TestAutoclaim(t *testing.T) {
 	assert.NoError(t, err)
 
 	msg := <-broker.Rcv
-	assert.Equal(t, "bar", msg.Body())
+	assert.EqualValues(t, "bar", msg.Body())
 
 	otherCancel()
 
@@ -118,5 +116,5 @@ func TestAutoclaim(t *testing.T) {
 
 	msg = <-broker.Rcv
 	assert.NoError(t, msg.Ack(ctx))
-	assert.Equal(t, "bar", msg.Body())
+	assert.EqualValues(t, "bar", msg.Body())
 }

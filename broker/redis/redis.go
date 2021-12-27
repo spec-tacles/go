@@ -54,7 +54,6 @@ type Redis struct {
 
 	Config        radix.PoolConfig
 	Group         string
-	Subgroup      string
 	Name          string
 	MaxChunk      uint64
 	BlockInterval time.Duration
@@ -71,36 +70,17 @@ type Redis struct {
 }
 
 // NewRedis creates a new Redis broker
-func NewRedis(group string, subgroup string) *Redis {
+func NewRedis(client radix.Client, group string) *Redis {
 	return &Redis{
+		pool: client,
+
 		Group:          group,
-		Subgroup:       subgroup,
 		Name:           strconv.FormatInt(rand.Int63(), 16),
 		MaxChunk:       10,
 		BlockInterval:  3 * time.Second,
 		UnackTimeout:   15 * time.Second,
 		PendingTimeout: 1 * time.Hour,
 	}
-}
-
-// Connect connects the broker to Redis
-func (r *Redis) Connect(ctx context.Context, url string) error {
-	pool, err := r.Config.New(ctx, "tcp", url)
-	if err != nil {
-		return err
-	}
-
-	r.pool = pool
-	return nil
-}
-
-// Close closes the broker
-func (r *Redis) Close() (err error) {
-	if r.pool == nil {
-		return broker.ErrDisconnected
-	}
-
-	return r.pool.Close()
 }
 
 // Publish publishes a message to the broker

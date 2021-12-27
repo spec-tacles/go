@@ -38,16 +38,6 @@ func (p *IOPacket) Ack(context.Context) error {
 	return nil
 }
 
-// Close implements io.Closer
-func (b *RWBroker) Close() error {
-	return nil
-}
-
-// Connect implements Broker interface
-func (b *RWBroker) Connect(ctx context.Context, url string) error {
-	return nil
-}
-
 // Publish writes data to the writer
 func (b *RWBroker) Publish(ctx context.Context, event string, data interface{}) error {
 	return codec.NewEncoder(b.W, &codecHandle).Encode(IOPacket{event, data})
