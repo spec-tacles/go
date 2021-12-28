@@ -40,7 +40,8 @@ func (m *RedisMessage) Reply(ctx context.Context, data interface{}) error {
 		return err
 	}
 
-	return m.r.pool.Do(ctx, radix.Cmd(nil, "PUBLISH", m.id.String(), string(b)))
+	key := m.event + m.id.String()
+	return m.r.pool.Do(ctx, radix.Cmd(nil, "PUBLISH", key, string(b)))
 }
 
 // Ack acknowledges receipt of the message
