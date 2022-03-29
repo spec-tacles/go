@@ -75,7 +75,7 @@ func (a *AMQP) setupRPC() error {
 		a.Group,
 		"direct",
 		true,
-		true,
+		false,
 		false,
 		false,
 		nil,
