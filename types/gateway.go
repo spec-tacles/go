@@ -61,8 +61,13 @@ const (
 	IntentDirectMessages
 	IntentDirectMessageReactions
 	IntentDirectMessageTyping
-	_
+	IntentMessageContent
 	IntentGuildScheduledEvents
+	_
+	_
+	_
+	IntentAutoModerationConfiguration
+	IntentAutoModerationExecution
 )
 
 // GatewayEvent represents a gateway packet's event name
