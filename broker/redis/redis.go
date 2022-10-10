@@ -23,6 +23,10 @@ type RedisMessage struct {
 	body  string
 }
 
+type RedisActor interface {
+	Do(context.Context, radix.Action) error
+}
+
 func (m *RedisMessage) Event() string {
 	return m.event
 }
@@ -41,17 +45,17 @@ func (m *RedisMessage) Reply(ctx context.Context, data interface{}) error {
 	}
 
 	key := m.event + m.id.String()
-	return m.r.pool.Do(ctx, radix.Cmd(nil, "PUBLISH", key, string(b)))
+	return m.r.actor.Do(ctx, radix.Cmd(nil, "PUBLISH", key, string(b)))
 }
 
 // Ack acknowledges receipt of the message
 func (m *RedisMessage) Ack(ctx context.Context) error {
-	return m.r.pool.Do(ctx, radix.Cmd(nil, "XACK", m.event, m.r.Group, m.id.String()))
+	return m.r.actor.Do(ctx, radix.Cmd(nil, "XACK", m.event, m.r.Group, m.id.String()))
 }
 
 // Redis is a broker that uses Redis streams
 type Redis struct {
-	pool radix.Client
+	actor RedisActor
 
 	Config        radix.PoolConfig
 	Group         string
@@ -73,7 +77,7 @@ type Redis struct {
 // NewRedis creates a new Redis broker
 func NewRedis(client radix.Client, group string) *Redis {
 	return &Redis{
-		pool: client,
+		actor: client,
 
 		Group:          group,
 		Name:           strconv.FormatInt(rand.Int63(), 16),
@@ -86,7 +90,7 @@ func NewRedis(client radix.Client, group string) *Redis {
 
 // Publish publishes a message to the broker
 func (r *Redis) Publish(ctx context.Context, event string, data interface{}) error {
-	if r.pool == nil {
+	if r.actor == nil {
 		return broker.ErrDisconnected
 	}
 
@@ -114,17 +118,17 @@ func (r *Redis) Publish(ctx context.Context, event string, data interface{}) err
 		)
 	}
 
-	return r.pool.Do(ctx, action)
+	return r.actor.Do(ctx, action)
 }
 
 // Subscribe subscribes this broker to an event
 func (r *Redis) Subscribe(ctx context.Context, events []string, messages chan<- broker.Message) error {
-	if r.pool == nil {
+	if r.actor == nil {
 		return broker.ErrDisconnected
 	}
 
 	for _, event := range events {
-		err := r.pool.Do(ctx, radix.Cmd(nil, "XGROUP", "CREATE", event, r.Group, "0", "MKSTREAM"))
+		err := r.actor.Do(ctx, radix.Cmd(nil, "XGROUP", "CREATE", event, r.Group, "0", "MKSTREAM"))
 
 		var redisError resp3.SimpleError
 		if errors.As(err, &redisError) && strings.HasPrefix(redisError.S, "BUSYGROUP") {
@@ -179,7 +183,7 @@ func (r *Redis) listenXread(ctx context.Context, events []string, messages chan<
 			"BLOCK", strconv.FormatInt(r.BlockInterval.Milliseconds(), 10),
 			"STREAMS", events, streamIds,
 		)
-		err = r.pool.Do(ctx, action)
+		err = r.actor.Do(ctx, action)
 
 		if err != nil {
 			return
@@ -200,7 +204,7 @@ func (r *Redis) listenXautoclaim(ctx context.Context, events []string, messages 
 
 		for _, event := range events {
 			action := radix.Cmd(&data, "XAUTOCLAIM", event, r.Group, r.Name, timeout, start)
-			err = r.pool.Do(ctx, action)
+			err = r.actor.Do(ctx, action)
 
 			if err != nil {
 				return
