@@ -75,9 +75,9 @@ type Redis struct {
 }
 
 // NewRedis creates a new Redis broker
-func NewRedis(client radix.Client, group string) *Redis {
+func NewRedis(actor RedisActor, group string) *Redis {
 	return &Redis{
-		actor: client,
+		actor: actor,
 
 		Group:          group,
 		Name:           strconv.FormatInt(rand.Int63(), 16),
