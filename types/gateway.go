@@ -184,11 +184,12 @@ type Hello struct {
 
 // Ready represents a ready packet
 type Ready struct {
-	Version   int           `json:"v"`
-	User      interface{}   `json:"user"`   // TODO: type with user
-	Guilds    []interface{} `json:"guilds"` // TODO: type with guild
-	SessionID string        `json:"session_id"`
-	Trace     []string      `json:"_trace"`
+	Version          int           `json:"v"`
+	User             interface{}   `json:"user"`   // TODO: type with user
+	Guilds           []interface{} `json:"guilds"` // TODO: type with guild
+	SessionID        string        `json:"session_id"`
+	Trace            []string      `json:"_trace"`
+	ResumeGatewayURL string        `json:"resume_gateway_url"`
 }
 
 // Resumed represents a resumed packet
